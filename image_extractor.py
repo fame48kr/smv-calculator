@@ -26,8 +26,11 @@ def _get_cloud_image(orig_idx: int) -> bytes | None:
 def load_image_index() -> dict:
     """On cloud: no-op (images served directly by index). Local: build XML index."""
     if IS_CLOUD:
-        from cloud_loader import load_cloud_images
-        load_cloud_images()  # trigger download
+        try:
+            from cloud_loader import load_cloud_images
+            load_cloud_images()  # trigger download
+        except Exception:
+            pass  # images unavailable — app still works without them
         return {}
     return _load_image_index_local()
 

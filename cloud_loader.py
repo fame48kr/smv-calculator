@@ -28,18 +28,21 @@ def _download_zip() -> str:
 @st.cache_resource(show_spinner="Loading image index...")
 def load_cloud_images() -> dict[int, bytes]:
     """Returns {df_idx: jpeg_bytes} for all thumbnails."""
-    zip_path = _download_zip()
-    if not zip_path or not os.path.exists(zip_path):
-        return {}
-    images = {}
-    with zipfile.ZipFile(zip_path) as z:
-        for name in z.namelist():
-            try:
-                idx = int(name.replace(".jpg", ""))
-                images[idx] = z.read(name)
-            except ValueError:
-                pass
-    return images
+    try:
+        zip_path = _download_zip()
+        if not zip_path or not os.path.exists(zip_path):
+            return {}
+        images = {}
+        with zipfile.ZipFile(zip_path) as z:
+            for name in z.namelist():
+                try:
+                    idx = int(name.replace(".jpg", ""))
+                    images[idx] = z.read(name)
+                except ValueError:
+                    pass
+        return images
+    except Exception:
+        return {}  # images unavailable — app still works without them
 
 
 def get_cloud_image(orig_idx: int) -> bytes | None:
