@@ -308,7 +308,7 @@ def rank_by_similarity(sketch_bytes: bytes, candidates: list, api_key: str,
     """Rank candidates by visual + feature similarity to sketch."""
     client = anthropic.Anthropic(api_key=api_key)
     valid = [c for c in candidates if c.get('img_bytes')]
-    to_rank = valid[:12]
+    to_rank = valid[:8]
 
     if not to_rank:
         for c in candidates:
@@ -499,7 +499,7 @@ Sort by score descending."""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=3000,
+        max_tokens=6000,
         messages=[{"role": "user", "content": content}]
     )
 
@@ -507,7 +507,26 @@ Sort by score descending."""
     if "```" in text:
         text = text.split("```")[1].replace("json", "").strip()
 
-    ranked = json.loads(text).get("rankings", [])
+    # Truncated JSON recovery: find the last complete ranking entry
+    try:
+        ranked = json.loads(text).get("rankings", [])
+    except json.JSONDecodeError:
+        # Try to recover partial JSON up to last complete '}}' block
+        cut = text.rfind('},')
+        if cut == -1:
+            cut = text.rfind('}')
+        if cut > 0:
+            partial = text[:cut + 1]
+            # Wrap into valid rankings array
+            try:
+                partial_fixed = '{"rankings": [' + partial.split('"rankings": [')[-1]
+                if not partial_fixed.rstrip().endswith(']}'):
+                    partial_fixed = partial_fixed.rstrip().rstrip(',') + ']}'
+                ranked = json.loads(partial_fixed).get("rankings", [])
+            except Exception:
+                ranked = []
+        else:
+            ranked = []
     score_map = {r["ref"]: r for r in ranked}
 
     # Back-apply hard caps
