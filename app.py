@@ -362,8 +362,26 @@ with tab2:
         if kw_results.empty:
             st.warning("No processes found for the given keyword(s).")
         else:
-            styles_with_kw = list(kw_results['STYLE'].unique())
-            st.success(f"**{len(kw_results)} processes** found — {len(styles_with_kw)} styles")
+            styles_with_kw_raw = list(kw_results['STYLE'].unique())
+
+            # Sort by category relevance: same CAT1 first, then same CAT1 prefix, then rest
+            _ref_cat1 = (st.session_state.analysis.get('cat1', '') if st.session_state.get('analysis') else '') or sel_cat1
+            _ref_prefix = str(_ref_cat1)[:3].upper()  # e.g. "B-A" → "B-A", prefix = "B-A"
+
+            # Build cat1 lookup from df_list
+            _cat1_lookup = df_list.drop_duplicates('STYLE').set_index('STYLE')['CAT1'].to_dict() if 'CAT1' in df_list.columns else {}
+
+            def _cat_priority(sname):
+                cat = str(_cat1_lookup.get(sname, '')).strip()
+                if cat == _ref_cat1:           return 0   # exact CAT1 match
+                if cat[:3].upper() == _ref_prefix[:3]: return 1   # same CAT prefix (e.g. B-)
+                return 2                                   # other category
+
+            styles_with_kw = sorted(styles_with_kw_raw, key=_cat_priority)
+            st.success(f"**{len(kw_results)} processes** found — {len(styles_with_kw)} styles  |  sorted by category relevance to current sketch")
+
+            if _ref_cat1:
+                st.caption(f"Priority order: 🥇 Same CAT1 ({_ref_cat1[:6]}…) → 🥈 Same category group → 🥉 Other")
 
             st.markdown("**Select a style:**")
             GCOLS = 5
@@ -378,7 +396,9 @@ with tab2:
                             st.markdown("🖼️")
                         match_cnt = len(kw_results[kw_results['STYLE']==sname])
                         total_cnt = len(df_proc[df_proc['STYLE'].astype(str).str.strip()==sname])
-                        st.caption(f"**{sname}**  \n🔍{match_cnt} / {total_cnt} proc")
+                        _scat = str(_cat1_lookup.get(sname, '')).strip()
+                        _badge = "🥇" if _scat == _ref_cat1 else ("🥈" if _scat[:3].upper() == _ref_prefix[:3] else "🥉")
+                        st.caption(f"{_badge} **{sname}**  \n🔍{match_cnt} / {total_cnt} proc")
                         is_sel = st.session_state.get("kw_style_sel") == sname
                         if st.button("Select" if not is_sel else "✅", key=f"kw_img_{sname}_{rs}_{gi}", disabled=is_sel):
                             st.session_state["kw_style_sel"] = sname
