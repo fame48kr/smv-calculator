@@ -227,6 +227,59 @@ def _feature_prescore(row, sf: dict) -> float:
     cat4 = str(row.get('CAT4', '') or '').lower()
     text = cat2 + ' ' + cat3 + ' ' + cat4
 
+    garment_type = sf.get('_garment_type', 'top')
+
+    # ── DRESS pre-score ──────────────────────────────────────────────
+    if garment_type == 'dress':
+        # Sleeve length from CAT3 (weight 15 match / -15 mismatch)
+        slv_len = sf.get('sleeve_length', '')
+        slv_hits = {
+            'long':       ['long sleeve', 'l/s'],
+            'short':      ['short sleeve', 's/s'],
+            'sleeveless': ['sleeveless', 'sleeve less', 's/less'],
+        }
+        _all_slv_kws = ['long sleeve', 'short sleeve', 'sleeveless', 'sleeve less', 'l/s', 's/s', 's/less']
+        hits = slv_hits.get(slv_len, [])
+        ref_has_any_slv = any(k in text for k in _all_slv_kws)
+        if hits and any(k in text for k in hits):
+            score += 15
+        elif hits and ref_has_any_slv:
+            score -= 15  # explicit sleeve-length mismatch
+        else:
+            score += 3   # no info → neutral
+
+        # Pocket (weight 12)
+        sketch_pocket = sf.get('pocket', {}).get('present', False)
+        ref_pocket = 'pocket' in text or 'pkt' in text
+        score += 12 if sketch_pocket == ref_pocket else -6
+        pkt_type = sf.get('pocket', {}).get('type', 'none')
+        if pkt_type in ('patch',) and 'patch' in text:
+            score += 5
+
+        # Neckline (weight 8)
+        neckline = sf.get('neckline', '')
+        nk_hits = {
+            'crew': ['crew'], 'v-neck': ['v-neck', 'v neck'],
+            'square': ['square'], 'scoop': ['scoop'],
+            'mock-neck': ['mock'], 'collar': ['collar'],
+        }
+        if any(k in text for k in nk_hits.get(neckline, [])):
+            score += 8
+
+        # Hem (weight 6)
+        hem_shape = sf.get('hem', {}).get('shape', '')
+        hem_hits = {
+            'tiered':     ['tier', 'ruffle', 'gathered'],
+            'curved':     ['curved', 'round hem'],
+            'straight':   ['straight hem'],
+            'asymmetric': ['asymm'],
+        }
+        if any(k in text for k in hem_hits.get(hem_shape, [])):
+            score += 6
+
+        return float(score)
+
+    # ── TOP pre-score ────────────────────────────────────────────────
     # Hood (weight 20 — hard penalty on mismatch)
     sketch_hood = bool(sf.get('hood'))
     ref_hooded = 'hood' in text
@@ -243,13 +296,13 @@ def _feature_prescore(row, sf: dict) -> float:
     hits = slv_hits.get(slv_len, [])
     ref_has_any_slv = any(k in text for k in _all_slv_kws)
     if hits and any(k in text for k in hits):
-        score += 12  # match
+        score += 12
     elif hits and ref_has_any_slv:
-        score -= 12  # explicit mismatch (e.g. sketch=long, ref=sleeveless)
+        score -= 12
     else:
-        score += 2   # no sleeve info in ref → neutral
+        score += 2
 
-    # Sleeve construction: raglan vs set-in only (drop-shoulder = set-in variant)
+    # Sleeve construction: raglan vs set-in
     slv_c = sf.get('sleeve', {}).get('construction', '')
     construction_hits = {
         'raglan': ['raglan'],
@@ -259,9 +312,9 @@ def _feature_prescore(row, sf: dict) -> float:
     ref_raglan    = 'raglan' in text
     if slv_c:
         if sketch_raglan == ref_raglan:
-            score += 18   # raglan/raglan or set-in/set-in match
+            score += 18
         else:
-            score -= 18   # hard penalty: raglan vs set-in mismatch
+            score -= 18
 
     # Pocket (weight 12)
     sketch_pocket = sf.get('pocket', {}).get('present', False)
@@ -282,7 +335,7 @@ def _feature_prescore(row, sf: dict) -> float:
     if any(k in text for k in nk_hits.get(neckline, [])):
         score += 8
 
-    # Hem (weight 8) — CAT3/4 often has CURVED HEM, SPLIT HEM
+    # Hem (weight 8)
     hem_shape = sf.get('hem', {}).get('shape', '')
     hem_hits = {
         'curved':     ['curved', 'round hem', 'curved hem'],
@@ -299,7 +352,7 @@ def _feature_prescore(row, sf: dict) -> float:
     ref_wb = any(k in text for k in ['waistband', 'waist band', 'rib band', 'ribband', 'bottom band'])
     score += 8 if wb_present == ref_wb else -4
 
-    # CAT3/4 bonus: construction keyword confirmed in detail fields
+    # CAT3/4 bonus: construction keyword
     slv_c2 = sf.get('sleeve', {}).get('construction', '')
     c_hits = construction_hits.get(slv_c2, [])
     if slv_c2 and c_hits and any(k in cat3 + ' ' + cat4 for k in c_hits):
@@ -356,8 +409,11 @@ def search_similar_styles(df_list, df_smv, cat1=None, cat2=None, genders=None,
     if sketch_features and not df.empty:
         proc_index = build_process_index(df_proc) if df_proc is not None else {}
         smv_range  = _estimate_smv_range(sketch_features)
+        # Inject garment_type so _feature_prescore can branch correctly
+        sf_with_type = dict(sketch_features)
+        sf_with_type['_garment_type'] = sketch_features.get('_garment_type', 'top')
         df['_score'] = df.apply(
-            lambda r: _combined_prescore(r, sketch_features, proc_index, smv_range), axis=1
+            lambda r: _combined_prescore(r, sf_with_type, proc_index, smv_range), axis=1
         )
         df = df.sort_values('_score', ascending=False).drop(columns='_score')
 

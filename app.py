@@ -139,6 +139,22 @@ with col_info:
                         st.markdown(f"**Leg silhouette:** {f.get('leg_silhouette','?')}")
                         st.markdown(f"**Belt loops:** {'✅ Yes' if f.get('belt_loops') else '❌ No'}")
                         st.markdown(f"**Lining:** {f.get('lining','none')}")
+                elif gtype == "dress":
+                    with col_a:
+                        st.markdown(f"**Skirt silhouette:** {f.get('skirt_silhouette','?')}")
+                        st.markdown(f"**Waist treatment:** {f.get('waist_treatment','?')}")
+                        st.markdown(f"**Sleeve length:** {f.get('sleeve_length','?')}")
+                        st.markdown(f"**Sleeve construction:** {f.get('sleeve_construction','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        st.markdown(f"**Back closure:** {f.get('back_closure','?')}")
+                    with col_c:
+                        st.markdown(f"**Neckline:** {f.get('neckline','?')}")
+                        st.markdown(f"**Neckline finish:** {f.get('neckline_finish','?')}")
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
                 else:
                     with col_a:
                         st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
@@ -193,7 +209,10 @@ if _sec2_open:
 
 sel_genders = genders if use_gender else []
 
-_sketch_feats = st.session_state.analysis.get('features') if st.session_state.get('analysis') else None
+_sketch_feats = None
+if st.session_state.get('analysis'):
+    _sketch_feats = dict(st.session_state.analysis.get('features') or {})
+    _sketch_feats['_garment_type'] = st.session_state.analysis.get('garment_type', 'top')
 
 results = search_similar_styles(
     df_list, df_smv,

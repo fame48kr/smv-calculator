@@ -57,10 +57,13 @@ CAT2_BY_CAT1 = {
 
 # CAT1 prefixes that indicate a BOTTOM garment
 BOTTOM_CATS = {"B-A", "B-B", "B-C", "B-D", "B-E", "B-F"}
+DRESS_CATS  = {"C-A"}
 
 def _is_bottom(cat1: str) -> bool:
-    prefix = str(cat1)[:3].upper()
-    return prefix in BOTTOM_CATS
+    return str(cat1)[:3].upper() in BOTTOM_CATS
+
+def _is_dress(cat1: str) -> bool:
+    return str(cat1)[:3].upper() in DRESS_CATS
 
 
 # ── Feature weights ───────────────────────────────────────────────
@@ -80,15 +83,28 @@ FEATURE_WEIGHTS = {   # TOP weights (legacy key kept for compatibility)
 FEATURE_WEIGHTS_TOP = FEATURE_WEIGHTS
 
 FEATURE_WEIGHTS_BOTTOM = {
-    "waistband_construction": 20,  # set-in vs turn-back → direct CM impact
-    "leg_silhouette":         18,  # wide-leg/tapered/jogger → pattern & sewing time differ
-    "pocket":                 15,  # pocket count & type
-    "fly_closure":            12,  # zip-fly requires extra operation
+    "waistband_construction": 20,
+    "leg_silhouette":         18,
+    "pocket":                 15,
+    "fly_closure":            12,
     "hem":                    10,
-    "drawcord":                8,  # drawcord insertion operation
+    "drawcord":                8,
     "rise":                    7,
     "belt_loops":              5,
     "lining":                  5,
+}
+
+FEATURE_WEIGHTS_DRESS = {
+    "skirt_silhouette":    22,  # tiered/a-line/straight → biggest CM difference
+    "waist_treatment":     18,  # drop-waist/empire/natural → pattern complexity
+    "sleeve_length":       15,  # sleeveless vs long → major CM gap
+    "neckline":            12,
+    "pocket":              12,
+    "back_closure":        10,  # pullover/zipper-back/button-back
+    "hem":                  8,
+    "cuff":                 5,
+    "sleeve_construction":  5,
+    "neckline_finish":      3,
 }
 
 HARD_CAPS = {   # TOP
@@ -97,8 +113,13 @@ HARD_CAPS = {   # TOP
 }
 
 HARD_CAPS_BOTTOM = {
-    "waistband_construction": 50,  # set-in vs turn-back is a fundamental CM difference
-    "leg_silhouette":         45,  # wide-leg vs tapered → very different construction
+    "waistband_construction": 50,
+    "leg_silhouette":         45,
+}
+
+HARD_CAPS_DRESS = {
+    "skirt_silhouette": 50,  # tiered vs straight is fundamental
+    "sleeve_length":    45,  # sleeveless vs long is major
 }
 
 
@@ -129,14 +150,14 @@ Category #2 options (by Category #1):
 PART B — Detect garment type, then extract the appropriate construction features.
 
 STEP 1: Determine garment_type
-  - "top"    → shirts, pullovers, jackets, tanks, bras, bodysuits, cardigans, vests, etc.
+  - "top"    → shirts, pullovers, jackets, tanks, bodysuits, cardigans, vests, etc.
   - "bottom" → pants, leggings, skirts, shorts, joggers, etc.
-  - "dress"  → one-piece dress / jumpsuit / romper
+  - "dress"  → one-piece dress (CAT1 = C-A) TOP - DRESS)
   - Use the selected CAT1 and the sketch to decide.
 
 STEP 2: Extract features based on garment_type.
 
-=== If garment_type is "top" or "dress" ===
+=== If garment_type is "top" ===
 Extract:
 1. hood: true/false
 2. pocket: present (true/false), type (none|kangaroo|welt|side-seam|patch|chest)
@@ -152,6 +173,29 @@ Extract:
 8. back_detail: none|center-seam|yoke|pleats|elastic-back|cutout
 9. ribbing: none|collar-only|collar-cuff|collar-cuff-hem|hem-only
 
+=== If garment_type is "dress" ===
+Extract:
+1. skirt_silhouette: a-line | tiered-gathered | straight | bubble | pleated
+   - a-line: smooth flare from waist/hip, princess seams or darts — NO horizontal seam tiers
+   - tiered-gathered: two or more horizontal tier seams, each panel gathered — visible tier seams
+   - straight: minimal flare, pencil/column shape
+   - bubble: gathered and tucked at hem creating bubble effect
+   - pleated: structured pleats (box/knife/inverted)
+2. waist_treatment: empire | drop-waist | natural | fitted | gathered
+   - empire: seam just below bust (high waist)
+   - drop-waist: seam well below natural waist, at hip level
+   - natural: seam at natural waistline
+   - fitted: no distinct waist seam, fitted bodice flows into skirt
+   - gathered: bodice gathers directly into skirt with elasticated waist or gathered seam
+3. sleeve_length: sleeveless | short | long
+4. sleeve_construction: EXACTLY "set-in" or "raglan"
+5. neckline: crew | v-neck | square | scoop | mock-neck | collar | hooded
+6. pocket: present (true/false), type (none|patch|side-seam|welt)
+7. back_closure: pullover | zipper-back | button-back
+8. hem: shape (straight|curved|tiered|asymmetric), finish (folded-hem|rib-band|raw|ruffle|lace-trim)
+9. cuff: none | rib | folded | elastic | ruffle
+10. neckline_finish: rib-band | facing | self-fabric | collar
+
 === If garment_type is "bottom" ===
 Extract:
 1. waistband_construction: EXACTLY "set-in" or "turn-back"
@@ -163,12 +207,6 @@ Extract:
               layer of fabric folds back on itself. Also called fold-over waistband.
 2. drawcord: true (visible drawcord at waist) | false
 3. leg_silhouette: straight|wide-leg|tapered|jogger|flare|boot-cut
-   - straight: consistent width from hip to hem
-   - wide-leg: significantly wider below knee
-   - tapered:  wider at hip, narrows toward ankle
-   - jogger:   tapered with gathered/ribbed ankle cuff
-   - flare:    flares out below knee
-   - boot-cut: slight flare from knee down
 4. pocket: present (true/false), type (none|side-seam|welt-back|patch-back|coin|multiple)
 5. fly_closure: none|zip-fly|button-fly|elastic-only
 6. hem: shape (straight|split|raw|cuff-band), finish (raw|folded-hem|rib-band|turn-up)
@@ -178,7 +216,7 @@ Extract:
 
 Respond in JSON only — choose the correct features block based on garment_type:
 
-For TOP/DRESS:
+For TOP:
 {{
   "garment_type": "top",
   "cat1": "<exact value>",
@@ -194,6 +232,28 @@ For TOP/DRESS:
     "waistband": {{"present": <true|false>, "type": "<type>"}},
     "back_detail": "<value>",
     "ribbing": "<value>"
+  }},
+  "construction_notes": "<key construction details, max 2 sentences>",
+  "confidence": <0-100>
+}}
+
+For DRESS:
+{{
+  "garment_type": "dress",
+  "cat1": "<exact value>",
+  "cat2": "<exact value>",
+  "cat3_keyword": "<brief phrase>",
+  "features": {{
+    "skirt_silhouette": "<a-line|tiered-gathered|straight|bubble|pleated>",
+    "waist_treatment": "<empire|drop-waist|natural|fitted|gathered>",
+    "sleeve_length": "<sleeveless|short|long>",
+    "sleeve_construction": "<set-in|raglan>",
+    "neckline": "<value>",
+    "pocket": {{"present": <true|false>, "type": "<type>"}},
+    "back_closure": "<pullover|zipper-back|button-back>",
+    "hem": {{"shape": "<shape>", "finish": "<finish>"}},
+    "cuff": "<value>",
+    "neckline_finish": "<rib-band|facing|self-fabric|collar>"
   }},
   "construction_notes": "<key construction details, max 2 sentences>",
   "confidence": <0-100>
@@ -246,14 +306,23 @@ def _feature_match_score(sketch_features: dict, ref_features: dict,
     if not sketch_features or not ref_features:
         return 50, []
 
-    weights = FEATURE_WEIGHTS_BOTTOM if garment_type == "bottom" else FEATURE_WEIGHTS_TOP
-    caps    = HARD_CAPS_BOTTOM        if garment_type == "bottom" else HARD_CAPS
+    if garment_type == "bottom":
+        weights = FEATURE_WEIGHTS_BOTTOM
+        caps    = HARD_CAPS_BOTTOM
+    elif garment_type == "dress":
+        weights = FEATURE_WEIGHTS_DRESS
+        caps    = HARD_CAPS_DRESS
+    else:
+        weights = FEATURE_WEIGHTS_TOP
+        caps    = HARD_CAPS
+
     total_weight = sum(weights.values())
     earned = 0
     mismatches = []
     hard_cap = 100
 
     for feat, weight in weights.items():
+        # TOP-specific: sleeve is nested dict
         if garment_type == "top":
             if feat == "sleeve_construction":
                 sv_c = str(sketch_features.get('sleeve', {}).get('construction', '') or '').lower()
@@ -275,6 +344,29 @@ def _feature_match_score(sketch_features: dict, ref_features: dict,
                 earned += weight if sv_l == rv_l else 0
                 if sv_l != rv_l:
                     mismatches.append('sleeve_length')
+                continue
+
+        # DRESS-specific: sleeve_construction and sleeve_length are flat fields
+        if garment_type == "dress":
+            if feat == "sleeve_length":
+                sv_l = str(sketch_features.get('sleeve_length', '') or '').lower()
+                rv_l = str(ref_features.get('sleeve_length', '') or '').lower()
+                if not sv_l or not rv_l:
+                    earned += weight * 0.5; continue
+                if sv_l == rv_l:
+                    earned += weight
+                else:
+                    mismatches.append('sleeve_length')
+                    hard_cap = min(hard_cap, caps.get('sleeve_length', 100))
+                continue
+            if feat == "sleeve_construction":
+                sv_c = str(sketch_features.get('sleeve_construction', '') or '').lower()
+                rv_c = str(ref_features.get('sleeve_construction', '') or '').lower()
+                if not sv_c or not rv_c:
+                    earned += weight * 0.5; continue
+                earned += weight if sv_c == rv_c else 0
+                if sv_c != rv_c:
+                    mismatches.append('sleeve_construction')
                 continue
 
         sv = sketch_features.get(feat)
@@ -332,6 +424,19 @@ def rank_by_similarity(sketch_bytes: bytes, candidates: list, api_key: str,
             f"Belt loops: {'YES' if sf.get('belt_loops') else 'NO'} | "
             f"Lining: {sf.get('lining','none')}"
         ) if sf else "N/A"
+    elif garment_type == "dress":
+        sketch_summary = (
+            f"Skirt silhouette: {sf.get('skirt_silhouette','?')} | "
+            f"Waist treatment: {sf.get('waist_treatment','?')} | "
+            f"Sleeve length: {sf.get('sleeve_length','?')} | "
+            f"Sleeve construction: {sf.get('sleeve_construction','?')} | "
+            f"Neckline: {sf.get('neckline','?')} | "
+            f"Pocket: {'YES-' + sf.get('pocket',{}).get('type','') if sf.get('pocket',{}).get('present') else 'NO'} | "
+            f"Back closure: {sf.get('back_closure','?')} | "
+            f"Hem: {sf.get('hem',{}).get('shape','?')}/{sf.get('hem',{}).get('finish','?')} | "
+            f"Cuff: {sf.get('cuff','none')} | "
+            f"Neckline finish: {sf.get('neckline_finish','?')}"
+        ) if sf else "N/A"
     else:
         slv = sf.get('sleeve', {})
         sketch_summary = (
@@ -357,7 +462,53 @@ def rank_by_similarity(sketch_bytes: bytes, candidates: list, api_key: str,
         content.append({"type": "text", "text": f"REF-{i}: Style {c['style']}"})
 
     # Build scoring prompt based on garment type
-    if garment_type == "bottom":
+    if garment_type == "dress":
+        scoring_prompt = f"""You are a garment construction analyst.
+
+NEW SKETCH features (already extracted):
+{sketch_summary}
+
+TASK: For each REF image (REF-1 to REF-{len(to_rank)}):
+
+STEP 1 — Identify dress construction features:
+  - skirt_silhouette: a-line / tiered-gathered / straight / bubble / pleated
+    · a-line: smooth flare, NO horizontal tier seams
+    · tiered-gathered: visible horizontal seams with gathered tiers
+  - waist_treatment: empire / drop-waist / natural / fitted / gathered
+  - sleeve_length: sleeveless / short / long
+  - sleeve_construction: set-in / raglan
+  - neckline: crew / v-neck / square / scoop / mock-neck / collar
+  - pocket: YES-type or NO (patch / side-seam / welt)
+  - back_closure: pullover / zipper-back / button-back
+  - hem: shape/finish
+  - cuff: none / rib / folded / elastic / ruffle
+  - neckline_finish: rib-band / facing / self-fabric / collar
+
+STEP 2 — Score each REF vs NEW SKETCH (0-100):
+
+  | Feature                                    | Max pts |
+  |--------------------------------------------|---------|
+  | Skirt silhouette (a-line/tiered/straight)  |  22     |
+  | Waist treatment (empire/drop/natural)       |  18     |
+  | Sleeve length (sleeveless/short/long)       |  15     |
+  | Neckline                                    |  12     |
+  | Pocket presence + type                      |  12     |
+  | Back closure (pullover/zipper/button)       |  10     |
+  | Hem shape + finish                          |   8     |
+  | Cuff                                        |   5     |
+  | Sleeve construction (set-in/raglan)         |   5     |
+  | Neckline finish                             |   3     |
+
+  HARD RULES:
+  1. Skirt silhouette mismatch (e.g. tiered-gathered vs a-line) → score MUST be ≤ 50
+  2. Sleeve length mismatch (e.g. sleeveless vs long) → score MUST be ≤ 45
+  3. Both mismatch → score MUST be ≤ 35
+
+Respond ONLY in compact JSON:
+{{"rankings":[{{"ref":1,"style":"<id>","detected":{{"skirt":"<value>","waist":"<value>","slv_len":"<value>","slv":"<set-in|raglan>","nk":"<value>","pkt":"<type or NO>","closure":"<value>","hem":"<shape/finish>","cuff":"<value>","nk_fin":"<value>"}},"score":<0-100>,"matched":["skirt",...],"mismatched":["waist",...],"reason":"<10 words max>"}},...]}}
+Sort by score descending."""
+
+    elif garment_type == "bottom":
         scoring_prompt = f"""You are a garment construction analyst.
 
 NEW SKETCH features (already extracted):
@@ -485,13 +636,33 @@ Sort by score descending."""
     score_map = {r["ref"]: r for r in ranked}
 
     # Back-apply hard caps
-    caps = HARD_CAPS_BOTTOM if garment_type == "bottom" else HARD_CAPS
+    if garment_type == "bottom":
+        caps = HARD_CAPS_BOTTOM
+    elif garment_type == "dress":
+        caps = HARD_CAPS_DRESS
+    else:
+        caps = HARD_CAPS
 
     for entry in ranked:
         detected = entry.get("detected", {})
         cap = 100
 
-        if garment_type == "bottom":
+        if garment_type == "dress":
+            skirt_sketch = str(sf.get("skirt_silhouette", "") or "").lower()
+            skirt_ref    = str(detected.get("skirt", "") or "").lower()
+            slvlen_sketch = str(sf.get("sleeve_length", "") or "").lower()
+            slvlen_ref    = str(detected.get("slv_len", "") or "").lower()
+            skirt_mismatch  = bool(skirt_sketch and skirt_ref and skirt_sketch != skirt_ref)
+            slvlen_mismatch = bool(slvlen_sketch and slvlen_ref and slvlen_sketch != slvlen_ref)
+            if skirt_mismatch and slvlen_mismatch: cap = 35
+            elif skirt_mismatch:  cap = 50
+            elif slvlen_mismatch: cap = 45
+            if skirt_mismatch and "skirt_silhouette" not in entry.get("mismatched", []):
+                entry.setdefault("mismatched", []).append("skirt_silhouette")
+            if slvlen_mismatch and "sleeve_length" not in entry.get("mismatched", []):
+                entry.setdefault("mismatched", []).append("sleeve_length")
+
+        elif garment_type == "bottom":
             wb_sketch = str(sf.get("waistband_construction", "") or "").lower()
             wb_ref    = str(detected.get("wb", detected.get("waistband_construction", "")) or "").lower()
             leg_sketch = str(sf.get("leg_silhouette", "") or "").lower()
