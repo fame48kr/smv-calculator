@@ -251,7 +251,10 @@ if "ranked_candidates" not in st.session_state:
 if not _sec2_open:
     st.caption(f"▼ {len(results)} styles found — click ▼ Expand to show")
 
-display_candidates = st.session_state.ranked_candidates if st.session_state.ranked_candidates else candidates
+display_candidates = sorted(
+    st.session_state.ranked_candidates,
+    key=lambda x: -(x.get('similarity_score') or 0)
+) if st.session_state.ranked_candidates else candidates
 
 if "selected_style" not in st.session_state:
     st.session_state.selected_style = display_candidates[0]['style'] if display_candidates else ""
