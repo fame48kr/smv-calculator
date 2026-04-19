@@ -399,30 +399,8 @@ STEP 3 — Score each REF vs NEW SKETCH (0-100):
   2. Leg silhouette mismatch (e.g. wide-leg vs tapered) → score MUST be ≤ 45
   3. Both mismatch → score MUST be ≤ 35
 
-Respond ONLY in this JSON format:
-{{
-  "rankings": [
-    {{
-      "ref": 1,
-      "style": "<style id>",
-      "detected": {{
-        "waistband_construction": "<set-in|turn-back>",
-        "waistband_construction_evidence": "<what you saw>",
-        "drawcord": "YES/NO",
-        "leg_silhouette": "<value>",
-        "pocket": "<YES-type or NO>",
-        "fly_closure": "<value>",
-        "hem": "<shape>/<finish>",
-        "rise": "<value>",
-        "belt_loops": "YES/NO"
-      }},
-      "score": <0-100>,
-      "matched": ["waistband_construction", ...],
-      "mismatched": ["leg_silhouette", ...],
-      "reason": "<1 sentence: state waistband construction and leg silhouette match/mismatch>"
-    }}
-  ]
-}}
+Respond ONLY in compact JSON (no extra spaces/newlines inside strings):
+{{"rankings":[{{"ref":1,"style":"<id>","detected":{{"wb":"<set-in|turn-back>","wb_ev":"<brief>","dc":"Y/N","leg":"<value>","pkt":"<type or NO>","fly":"<value>","hem":"<shape/finish>","rise":"<value>","bl":"Y/N"}},"score":<0-100>,"matched":["wb",...],"mismatched":["leg",...],"reason":"<10 words max>"}},...]}}
 Sort by score descending."""
 
     else:
@@ -468,38 +446,15 @@ STEP 3 — Score each REF vs NEW SKETCH (0-100):
   2. Sleeve construction mismatch (raglan vs set-in) → score MUST be ≤ 50
   3. Both mismatch → score MUST be ≤ 35
 
-Respond ONLY in this JSON format:
-{{
-  "rankings": [
-    {{
-      "ref": 1,
-      "style": "<style id>",
-      "detected": {{
-        "hood": "YES/NO",
-        "sleeve_construction": "<raglan|set-in>",
-        "sleeve_construction_evidence": "<what seam line you saw>",
-        "sleeve_length": "<length>",
-        "pocket": "<YES-type or NO>",
-        "hem": "<shape>/<finish>",
-        "neckline": "<value>",
-        "waistband": "<YES-type or NO>",
-        "cuff": "<value>",
-        "ribbing": "<value>"
-      }},
-      "score": <0-100>,
-      "matched": ["hood", "sleeve_construction", ...],
-      "mismatched": ["pocket", "hem", ...],
-      "reason": "<1 sentence: state sleeve construction type and whether it matches sketch>"
-    }}
-  ]
-}}
+Respond ONLY in compact JSON (no extra spaces/newlines inside strings):
+{{"rankings":[{{"ref":1,"style":"<id>","detected":{{"hood":"Y/N","slv":"<raglan|set-in>","slv_ev":"<5 words>","len":"<length>","pkt":"<type or NO>","hem":"<shape/finish>","nk":"<value>","wb":"<type or NO>","cuff":"<value>","rib":"<value>"}},"score":<0-100>,"matched":["hood","slv",...],"mismatched":["pkt",...],"reason":"<10 words max>"}},...]}}
 Sort by score descending."""
 
     content.append({"type": "text", "text": scoring_prompt})
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=6000,
+        max_tokens=8000,
         messages=[{"role": "user", "content": content}]
     )
 
@@ -538,9 +493,9 @@ Sort by score descending."""
 
         if garment_type == "bottom":
             wb_sketch = str(sf.get("waistband_construction", "") or "").lower()
-            wb_ref    = str(detected.get("waistband_construction", "") or "").lower()
+            wb_ref    = str(detected.get("wb", detected.get("waistband_construction", "")) or "").lower()
             leg_sketch = str(sf.get("leg_silhouette", "") or "").lower()
-            leg_ref    = str(detected.get("leg_silhouette", "") or "").lower()
+            leg_ref    = str(detected.get("leg", detected.get("leg_silhouette", "")) or "").lower()
             wb_mismatch  = bool(wb_sketch and wb_ref and wb_sketch != wb_ref)
             leg_mismatch = bool(leg_sketch and leg_ref and leg_sketch != leg_ref)
             if wb_mismatch and leg_mismatch: cap = 35
@@ -554,8 +509,8 @@ Sort by score descending."""
         else:
             sketch_hood  = bool(sf.get("hood"))
             sketch_slv_c = str(sf.get("sleeve", {}).get("construction", "") or "").lower()
-            ref_hood     = detected.get("hood", "").upper() == "YES"
-            ref_slv_c    = str(detected.get("sleeve_construction", "") or "").lower()
+            ref_hood     = detected.get("hood", "").upper() in ("Y", "YES")
+            ref_slv_c    = str(detected.get("slv", detected.get("sleeve_construction", "")) or "").lower()
             hood_mismatch = sketch_hood != ref_hood
             slv_mismatch  = bool(sketch_slv_c and ref_slv_c and sketch_slv_c != ref_slv_c)
             if hood_mismatch and slv_mismatch: cap = 35

@@ -303,16 +303,16 @@ if _sec2_open:
                 det = c.get('detected_features', {})
                 _an_gtype = st.session_state.analysis.get('garment_type', 'top') if st.session_state.get('analysis') else 'top'
                 if _an_gtype == "bottom":
-                    wb_det = det.get('waistband_construction', '')
-                    wb_ev  = det.get('waistband_construction_evidence', '')
-                    leg_det = det.get('leg_silhouette', '')
+                    wb_det  = det.get('wb', det.get('waistband_construction', ''))
+                    wb_ev   = det.get('wb_ev', det.get('waistband_construction_evidence', ''))
+                    leg_det = det.get('leg', det.get('leg_silhouette', ''))
                     if wb_det:
                         st.caption(f"👖 WB: **{wb_det}**" + (f" — {wb_ev}" if wb_ev else ""))
                     if leg_det:
                         st.caption(f"📐 Leg: **{leg_det}**")
                 else:
-                    slv_ev = det.get('sleeve_construction_evidence', '')
-                    slv_type = det.get('sleeve_construction', '')
+                    slv_ev   = det.get('slv_ev', det.get('sleeve_construction_evidence', ''))
+                    slv_type = det.get('slv', det.get('sleeve_construction', ''))
                     if slv_type:
                         st.caption(f"🪡 Sleeve: **{slv_type}**" + (f" — {slv_ev}" if slv_ev else ""))
 
