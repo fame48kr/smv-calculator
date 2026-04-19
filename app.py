@@ -72,14 +72,14 @@ with col_img:
         st.image(sketch_file, caption="Uploaded Sketch", use_container_width=True)
 
 with col_info:
-    gender_options = ['1. Womens','2. Mens','3. Boys','4. Girls','5. Toddler','6. Baby','7. Unisex']
+    gender_options = sorted(df_list['GENDER'].dropna().astype(str).unique().tolist())
     genders = st.multiselect(
         "Gender — multiple selection allowed",
         gender_options,
-        default=['4. Girls'],
+        default=[],
         help="Select to match AI analysis results. Leave empty to search all genders."
     )
-    gender = genders[0] if genders else gender_options[0]
+    gender = genders[0] if genders else (gender_options[0] if gender_options else "")
 
     analyze_btn = st.button("🤖 Run AI Analysis", type="primary", disabled=sketch_file is None)
 
