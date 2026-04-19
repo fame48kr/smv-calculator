@@ -376,8 +376,9 @@ with tab2:
                             st.image(img, use_container_width=True)
                         else:
                             st.markdown("🖼️")
-                        proc_cnt = len(kw_results[kw_results['STYLE']==sname])
-                        st.caption(f"**{sname}**  \n({proc_cnt} processes)")
+                        match_cnt = len(kw_results[kw_results['STYLE']==sname])
+                        total_cnt = len(df_proc[df_proc['STYLE'].astype(str).str.strip()==sname])
+                        st.caption(f"**{sname}**  \n🔍{match_cnt} / {total_cnt} proc")
                         is_sel = st.session_state.get("kw_style_sel") == sname
                         if st.button("Select" if not is_sel else "✅", key=f"kw_img_{sname}_{rs}_{gi}", disabled=is_sel):
                             st.session_state["kw_style_sel"] = sname
@@ -386,14 +387,31 @@ with tab2:
             sel_src_style = st.session_state.get("kw_style_sel", styles_with_kw[0])
             if sel_src_style not in styles_with_kw:
                 sel_src_style = styles_with_kw[0]
-            style_procs = kw_results[kw_results['STYLE'] == sel_src_style].copy()
 
-            avail = [c for c in ['PROCESS','MACHINE','SMV'] if c in style_procs.columns]
-            style_procs_disp = style_procs[avail].assign(ADD=False)
+            # Show ALL processes for the selected style (not just keyword matches)
+            all_style_procs = df_proc[df_proc['STYLE'].astype(str).str.strip() == sel_src_style].copy()
+            matched_nos = set(kw_results[kw_results['STYLE'] == sel_src_style].index)
+
+            # Add MATCH indicator column for highlighting
+            all_style_procs['🔍'] = all_style_procs.index.map(
+                lambda i: "★ match" if i in matched_nos else ""
+            )
+
+            avail = [c for c in ['PROCESS','MACHINE','SMV'] if c in all_style_procs.columns]
+            style_procs_disp = all_style_procs[['🔍'] + avail].assign(ADD=False)
+
+            match_count = len(matched_nos)
+            total_count = len(all_style_procs)
+            st.info(f"**{sel_src_style}** — {total_count} processes total  |  🔍 **{match_count}** match keyword  |  ★ = keyword match row")
+
             edited_kw = st.data_editor(
                 style_procs_disp,
-                column_config={"ADD": st.column_config.CheckboxColumn("Add", width="small")},
-                use_container_width=True, hide_index=True, height=300, key="kw_editor"
+                column_config={
+                    "ADD": st.column_config.CheckboxColumn("Add", width="small"),
+                    "🔍":  st.column_config.TextColumn("🔍", width="small"),
+                },
+                use_container_width=True, hide_index=True, height=400, key="kw_editor",
+                disabled=["🔍", "PROCESS", "MACHINE", "SMV"],
             )
             to_add = edited_kw[edited_kw['ADD'] == True]
             st.caption(f"Selected processes SMV total: **{to_add['SMV'].sum():.4f}** min ({len(to_add)} processes)")
