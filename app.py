@@ -156,7 +156,7 @@ with _h2:
     st.header("② Similar Style Search")
 with _b2:
     st.write("")
-    if st.button("▲ 접기" if _sec2_open else "▼ 펼치기", key="sec2_btn"):
+    if st.button("▲ Collapse" if _sec2_open else "▼ Expand", key="sec2_btn"):
         st.session_state['sec2_open'] = not _sec2_open
         st.rerun()
 
@@ -232,7 +232,7 @@ if "ranked_candidates" not in st.session_state:
     st.session_state.ranked_candidates = None
 
 if not _sec2_open:
-    st.caption(f"▼ {len(results)} styles found — click ▼ 펼치기 to expand")
+    st.caption(f"▼ {len(results)} styles found — click ▼ Expand to show")
 
 display_candidates = st.session_state.ranked_candidates if st.session_state.ranked_candidates else candidates
 
@@ -326,12 +326,12 @@ with _h3:
     st.header("③ Process Adjustment")
 with _b3:
     st.write("")
-    if st.button("▲ 접기" if _sec3_open else "▼ 펼치기", key="sec3_btn"):
+    if st.button("▲ Collapse" if _sec3_open else "▼ Expand", key="sec3_btn"):
         st.session_state['sec3_open'] = not _sec3_open
         st.rerun()
 
 if not _sec3_open:
-    st.caption(f"▼ Base style: {selected_style} — click ▼ 펼치기 to expand")
+    st.caption(f"▼ Base style: {selected_style} — click ▼ Expand to show")
 
 # ── Always-run: load process data & init worksheet ───────────────
 df_selected_proc = get_style_processes(df_proc, selected_style, df_smv=df_smv)
