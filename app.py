@@ -13,6 +13,23 @@ ENV_PATH = Path(__file__).parent / ".env"
 load_dotenv(ENV_PATH)
 
 st.set_page_config(page_title="CM Calculator", page_icon="✂️", layout="wide")
+
+# ── Access control ────────────────────────────────────────────────
+_APP_PASSWORD = st.secrets.get("APP_PASSWORD", "") or os.environ.get("APP_PASSWORD", "")
+
+if _APP_PASSWORD:
+    if not st.session_state.get("_authenticated"):
+        st.title("✂️ CM Calculator")
+        st.markdown("### Please enter the access password")
+        _pwd_input = st.text_input("Password", type="password", key="_pwd_input")
+        if st.button("Login", type="primary"):
+            if _pwd_input == _APP_PASSWORD:
+                st.session_state["_authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect password. Please try again.")
+        st.stop()
+
 st.title("✂️ CM Calculator AI Assistant")
 st.caption("Upload Sketch → AI Auto-Analysis → Find Similar Styles → Calculate CM")
 
