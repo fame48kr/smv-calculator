@@ -100,28 +100,47 @@ with col_info:
 
         # Construction features panel
         feats = a.get('features', {})
+        gtype = a.get('garment_type', 'top')
         if feats:
             with st.expander("🔍 Construction Features (used for similarity scoring)", expanded=True):
                 f = feats
                 col_a, col_b, col_c = st.columns(3)
-                with col_a:
-                    st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
-                    slv = f.get('sleeve', {})
-                    slv_c = slv.get('construction','?')
-                    st.markdown(f"**Sleeve construction:** {slv_c} ({'raglan' if slv_c=='raglan' else 'set-in'})")
-                    st.markdown(f"**Sleeve length:** {slv.get('length','?')}")
-                    st.markdown(f"**Neckline:** {f.get('neckline','?')}")
-                with col_b:
-                    pkt = f.get('pocket', {})
-                    st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
-                    hem = f.get('hem', {})
-                    st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
-                    st.markdown(f"**Cuff:** {f.get('cuff','none')}")
-                with col_c:
-                    wb = f.get('waistband', {})
-                    st.markdown(f"**Waistband:** {'✅ ' + wb.get('type','') if wb.get('present') else '❌ No'}")
-                    st.markdown(f"**Ribbing:** {f.get('ribbing','none')}")
-                    st.markdown(f"**Back Detail:** {f.get('back_detail','none')}")
+
+                if gtype == "bottom":
+                    with col_a:
+                        wb_con = f.get('waistband_construction', '?')
+                        st.markdown(f"**Waistband construction:** {wb_con}")
+                        st.markdown(f"**Drawcord:** {'✅ Yes' if f.get('drawcord') else '❌ No'}")
+                        st.markdown(f"**Rise:** {f.get('rise','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        st.markdown(f"**Fly / Closure:** {f.get('fly_closure','none')}")
+                    with col_c:
+                        st.markdown(f"**Leg silhouette:** {f.get('leg_silhouette','?')}")
+                        st.markdown(f"**Belt loops:** {'✅ Yes' if f.get('belt_loops') else '❌ No'}")
+                        st.markdown(f"**Lining:** {f.get('lining','none')}")
+                else:
+                    with col_a:
+                        st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
+                        slv = f.get('sleeve', {})
+                        slv_c = slv.get('construction','?')
+                        st.markdown(f"**Sleeve construction:** {slv_c} ({'raglan' if slv_c=='raglan' else 'set-in'})")
+                        st.markdown(f"**Sleeve length:** {slv.get('length','?')}")
+                        st.markdown(f"**Neckline:** {f.get('neckline','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
+                    with col_c:
+                        wb = f.get('waistband', {})
+                        st.markdown(f"**Waistband:** {'✅ ' + wb.get('type','') if wb.get('present') else '❌ No'}")
+                        st.markdown(f"**Ribbing:** {f.get('ribbing','none')}")
+                        st.markdown(f"**Back Detail:** {f.get('back_detail','none')}")
 
 
 # ══════════════════════════════════════════════
@@ -210,8 +229,10 @@ with col_rank:
                     if 'img_bytes' not in c:
                         c['img_bytes'] = get_image(c.get('orig_idx', -1))
                 sketch_features = st.session_state.analysis.get('features')
+                _gtype = st.session_state.analysis.get('garment_type', 'top')
                 ranked = rank_by_similarity(sketch_bytes, candidates, api_key,
-                                            sketch_features=sketch_features)
+                                            sketch_features=sketch_features,
+                                            garment_type=_gtype)
                 st.session_state.ranked_candidates = ranked
                 # Auto-select top-ranked style
                 if ranked:
@@ -245,12 +266,22 @@ for row_start in range(0, len(display_candidates), COLS_PER_ROW):
             if reason:
                 st.caption(f"*{reason}*")
 
-            # Show sleeve construction evidence when available
+            # Show key construction evidence per garment type
             det = c.get('detected_features', {})
-            slv_ev = det.get('sleeve_construction_evidence', '')
-            slv_type = det.get('sleeve_construction', '')
-            if slv_type:
-                st.caption(f"🪡 Sleeve: **{slv_type}**" + (f" — {slv_ev}" if slv_ev else ""))
+            _an_gtype = st.session_state.analysis.get('garment_type', 'top') if st.session_state.get('analysis') else 'top'
+            if _an_gtype == "bottom":
+                wb_det = det.get('waistband_construction', '')
+                wb_ev  = det.get('waistband_construction_evidence', '')
+                leg_det = det.get('leg_silhouette', '')
+                if wb_det:
+                    st.caption(f"👖 WB: **{wb_det}**" + (f" — {wb_ev}" if wb_ev else ""))
+                if leg_det:
+                    st.caption(f"📐 Leg: **{leg_det}**")
+            else:
+                slv_ev = det.get('sleeve_construction_evidence', '')
+                slv_type = det.get('sleeve_construction', '')
+                if slv_type:
+                    st.caption(f"🪡 Sleeve: **{slv_type}**" + (f" — {slv_ev}" if slv_ev else ""))
 
             matched = c.get('matched_features', [])
             mismatched = c.get('mismatched_features', [])
