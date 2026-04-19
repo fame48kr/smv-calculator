@@ -134,16 +134,22 @@ Examine each feature carefully from the sketch:
    - present: true/false
    - type: "none" | "kangaroo" | "welt" | "side-seam" | "patch" | "chest"
 3. sleeve:
-   - construction: "raglan" | "set-in"
-     ONLY two types matter for construction cost:
-     RAGLAN : diagonal seam runs from underarm up to the neckline on both
-              front and back panels — NO shoulder seam — sleeve fabric
-              meets the neckline directly.
-     SET-IN  : seam forms a closed curve around the armhole.
-              NOTE: drop-shoulder is a SET-IN variant (armhole just sits
-              lower on the arm) — classify it as "set-in".
-     Decision: Does a diagonal seam cross the chest/back from underarm
-               toward the neckline? YES → raglan. NO → set-in.
+   - construction: EXACTLY ONE of "raglan" or "set-in" — nothing else.
+     RAGLAN (strict definition):
+       • A continuous diagonal seam line runs from the UNDERARM all the
+         way up to the NECKLINE on both front AND back panels.
+       • There is NO horizontal shoulder seam — the sleeve fabric
+         reaches the neckline directly.
+       • This seam is clearly visible as a garment construction line
+         (not a design detail or style line).
+     SET-IN (everything else):
+       • A curved seam circles the armhole/shoulder area.
+       • Drop-shoulder: armhole seam sits low on the arm → still SET-IN.
+       • Dolman / batwing: sleeve cut from body fabric → SET-IN.
+       • Wide / oversized sleeves without a diagonal-to-neckline seam → SET-IN.
+       • ANY doubt → classify as SET-IN (raglan is uncommon; default to set-in).
+     Key test: Does the seam line START at the underarm AND end at the NECKLINE?
+       Both conditions must be true → raglan. Otherwise → set-in.
    - length: "sleeveless" | "short" | "3/4" | "long"
 4. hem:
    - shape: "straight" | "curved" | "high-low" | "split" | "rounded" | "asymmetric"
@@ -164,7 +170,7 @@ Respond in JSON only:
   "features": {{
     "hood": <true|false>,
     "pocket": {{"present": <true|false>, "type": "<type>"}},
-    "sleeve": {{"construction": "<set-in|raglan|drop-shoulder|dolman>", "length": "<length>"}},
+    "sleeve": {{"construction": "<set-in|raglan>", "length": "<length>"}},
     "hem": {{"shape": "<shape>", "finish": "<finish>"}},
     "neckline": "<value>",
     "cuff": "<value>",
@@ -177,8 +183,8 @@ Respond in JSON only:
 }}"""
 
     response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=768,
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
         messages=[{
             "role": "user",
             "content": [
