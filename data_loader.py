@@ -20,6 +20,7 @@ def _load_from_parquet():
     df_smv  = pd.read_parquet(f"{DATA_DIR}/df_smv.parquet")
     df_proc = pd.read_parquet(f"{DATA_DIR}/df_proc.parquet")
     df_cat  = pd.read_parquet(f"{DATA_DIR}/df_cat.parquet")
+    df_list['GENDER'] = df_list['GENDER'].astype(str).str.strip().str.title()
     return df_list, df_smv, df_proc, df_cat
 
 
@@ -35,6 +36,7 @@ def _load_from_excel():
     })
     df_list = df_list[df_list['STYLE'].notna()].reset_index(drop=False)
     df_list = df_list.rename(columns={'index': 'ORIG_IDX'})
+    df_list['GENDER'] = df_list['GENDER'].astype(str).str.strip().str.title()
 
     df_smv = pd.read_excel(EXCEL_PATH, sheet_name='SMV_요약')
     df_smv.columns = [str(c).strip() for c in df_smv.columns]
