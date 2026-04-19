@@ -331,7 +331,16 @@ def search_similar_styles(df_list, df_smv, cat1=None, cat2=None, genders=None,
     if genders:
         df = df[df['GENDER'].isin(genders)]
     if keyword:
-        df = df[df['STYLE'].astype(str).str.contains(keyword, na=False, case=False, regex=False)]
+        style_match = df['STYLE'].astype(str).str.contains(keyword, na=False, case=False, regex=False)
+        if df_proc is not None:
+            proc_styles = df_proc[
+                df_proc['PROCESS'].astype(str).str.contains(keyword, na=False, case=False, regex=False) |
+                df_proc['MACHINE'].astype(str).str.contains(keyword, na=False, case=False, regex=False)
+            ]['STYLE'].astype(str).str.strip().unique()
+            proc_match = df['STYLE'].astype(str).str.strip().isin(proc_styles)
+            df = df[style_match | proc_match]
+        else:
+            df = df[style_match]
 
     smv_lookup = df_smv.drop_duplicates('STYLE')[['STYLE', 'TOTAL_SMV', 'PROC_COUNT', 'MACHINES']]
     smv_lookup['STYLE'] = smv_lookup['STYLE'].astype(str).str.strip()
