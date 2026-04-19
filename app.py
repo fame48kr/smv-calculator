@@ -228,7 +228,8 @@ if results.empty:
 if fallback_used:
     st.warning(f"No results for Category #2 `{sel_cat2}` → **Searching by Category #1 only** ({len(results)} results)")
 else:
-    st.success(f"**{len(results)} similar styles** found — `{sel_cat1}` / `{sel_cat2 if use_cat2 else 'All'}`")
+    gender_label = ', '.join(sel_genders) if sel_genders else 'All genders'
+    st.success(f"**{len(results)} similar styles** found — `{sel_cat1}` / `{sel_cat2 if use_cat2 else 'All'}` / {gender_label}")
 
 # AI visual similarity ranking
 candidates = []

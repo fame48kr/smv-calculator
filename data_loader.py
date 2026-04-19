@@ -232,18 +232,22 @@ def _feature_prescore(row, sf: dict) -> float:
     ref_hooded = 'hood' in text
     score += 20 if sketch_hood == ref_hooded else -20
 
-    # Sleeve length (weight 12)
+    # Sleeve length (weight 12 match / -12 mismatch)
     slv_len = sf.get('sleeve', {}).get('length', '')
     slv_hits = {
         'long':       ['long sleeve', 'l/s', 'ls '],
         'short':      ['short sleeve', 's/s', 'ss '],
-        'sleeveless': ['sleeveless', 's/less'],
+        'sleeveless': ['sleeveless', 's/less', 'sleeve less'],
     }
+    _all_slv_kws = ['long sleeve', 'l/s', 'short sleeve', 's/s', 'sleeveless', 's/less', 'sleeve less', 'ls ']
     hits = slv_hits.get(slv_len, [])
+    ref_has_any_slv = any(k in text for k in _all_slv_kws)
     if hits and any(k in text for k in hits):
-        score += 12
-    elif not hits or not any(k in text for k in ['long sleeve','short sleeve','sleeveless']):
-        score += 4  # no info → slight neutral credit
+        score += 12  # match
+    elif hits and ref_has_any_slv:
+        score -= 12  # explicit mismatch (e.g. sketch=long, ref=sleeveless)
+    else:
+        score += 2   # no sleeve info in ref → neutral
 
     # Sleeve construction: raglan vs set-in only (drop-shoulder = set-in variant)
     slv_c = sf.get('sleeve', {}).get('construction', '')
