@@ -399,6 +399,12 @@ for _, row in results.iterrows():
 if "ranked_candidates" not in st.session_state:
     st.session_state.ranked_candidates = None
 
+# Clear ranked_candidates when search filters change so stale results aren't shown
+_search_key = f"{sel_cat1}|{sel_cat2 if use_cat2 else 'all'}|{','.join(sorted(sel_genders))}"
+if st.session_state.get('_last_search_key') != _search_key:
+    st.session_state.ranked_candidates = None
+    st.session_state['_last_search_key'] = _search_key
+
 if not _sec2_open:
     st.caption(f"▼ {len(results)} styles found — click ▼ Expand to show")
 
