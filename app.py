@@ -424,58 +424,11 @@ if _sec2_open:
                 smv_str = f"  SMV {c['smv']:.2f}" if c.get('smv') else ""
                 st.caption(f"**{c['style']}**  \n{c['cat2']} {c['cat3']}{smv_str}")
 
-                # ── Process DB Construction Features ──────────────────
-                _an_gtype = st.session_state.analysis.get('garment_type', 'top') if st.session_state.get('analysis') else 'top'
-                pf = get_proc_features(c['style'], _grid_proc_index, garment_type=_an_gtype)
-                if pf:
-                    lines = []
-                    # Pocket (common — always show)
-                    pkt_val = pf.get('pocket', 'NO')
-                    pkt_icon = '✅' if pkt_val not in ('NO', None) else '❌'
-                    lines.append(f"{pkt_icon} pkt: **{pkt_val}**")
-
-                    if _an_gtype == 'dress':
-                        bc = pf.get('back_closure')
-                        if bc:
-                            lines.append(f"back: **{bc}**")
-                        nf = pf.get('neckline_finish')
-                        if nf:
-                            lines.append(f"nk-finish: **{nf}**")
-                        cuff = pf.get('cuff')
-                        if cuff:
-                            lines.append(f"cuff: **{cuff}**")
-                        skirt = pf.get('skirt_silhouette')
-                        if skirt:
-                            lines.append(f"skirt: **{skirt}**")
-                        slv_l = pf.get('sleeve_length')
-                        if slv_l:
-                            lines.append(f"sleeve: **{slv_l}**")
-
-                    elif _an_gtype == 'bottom':
-                        wb = pf.get('waistband')
-                        if wb:
-                            lines.append(f"{'✅' if wb=='YES' else '❌'} wb: **{wb}**")
-                        ln = pf.get('lining')
-                        if ln:
-                            lines.append(f"lining: **{ln}**")
-
-                    else:  # top
-                        hood = pf.get('hood', 'NO')
-                        lines.append(f"{'✅' if hood=='YES' else '❌'} hood: **{hood}**")
-                        slv_c = pf.get('sleeve_construction')
-                        if slv_c:
-                            lines.append(f"slv: **{slv_c}**")
-                        cuff = pf.get('cuff')
-                        if cuff:
-                            lines.append(f"cuff: **{cuff}**")
-                        wb = pf.get('waistband')
-                        if wb == 'YES':
-                            lines.append(f"wb: **{wb}**")
-
-                    details = pf.get('details', [])
-                    if details:
-                        lines.append("📌 " + " · ".join(details))
-                    st.caption("🔩 " + "  \n".join(lines))
+                # ── Process DB Construction Details ───────────────────
+                pf = get_proc_features(c['style'], _grid_proc_index, garment_type='top')
+                details = pf.get('details', [])
+                if details:
+                    st.caption("📌 " + " · ".join(details))
 
                 is_selected = (st.session_state.selected_style == c['style'])
                 btn_label = "✅ Selected" if is_selected else "Select"

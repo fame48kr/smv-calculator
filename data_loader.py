@@ -195,9 +195,12 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
             f['lining'] = None
 
     # ── Universal construction details (garment-type agnostic) ──────
-    # Detected from process keywords; shown as compact badges on the card
+    # Detected from process keywords; shown as compact badges on the card.
+    # Order here determines display order on the card.
     details = []
 
+    if any(k in text for k in ['pocket', ' pkt', 'pkt ']):
+        details.append('pocket')
     if any(k in text for k in ['collar', 'attach collar', 'sew collar', 'inner collar',
                                 'join collar', 'invert collar', 'topstitch collar',
                                 'collar band']):
@@ -208,22 +211,48 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
     if any(k in text for k in ['placket', 'plkt', 'cf panel', 'button band',
                                 'button placket']):
         details.append('placket')
-    if any(k in text for k in [' slit', 'slit ', 'side slit', 'vent', 'hem slit']):
-        details.append('slit')
+    if any(k in text for k in ['button hole', 'buttonhole', 'attach button',
+                                'sew button', 'button loop', 'bartack button']):
+        details.append('button')
+    if any(k in text for k in ['snap', 'attach snap', 'popper', 'press snap']):
+        details.append('snap')
+    if any(k in text for k in ['stud', 'attach stud', 'press stud', 'rivet']):
+        details.append('stud')
+    if any(k in text for k in ['eyelet', 'attach eyelet', 'grommet']):
+        details.append('eyelet')
+    if any(k in text for k in ['o ring', 'o-ring', 'd-ring', 'ring attach',
+                                'attach ring']):
+        details.append('O-ring')
     if any(k in text for k in ['yoke', 'attach yoke', 'join yoke', 'sew yoke']):
         details.append('yoke')
-    if any(k in text for k in ['pleat', 'tuck', 'box pleat', 'kick pleat']):
+    if any(k in text for k in ['strap', 'attach strap', 'sew strap', 'join strap']):
+        details.append('strap')
+    if any(k in text for k in ['bow', 'attach bow', 'bow tie', 'bow trim']):
+        details.append('bow')
+    if any(k in text for k in ['patch', 'attach patch']):
+        details.append('patch')
+    if any(k in text for k in ['half moon', 'halfmoon', 'half-moon']):
+        details.append('half moon')
+    if any(k in text for k in [' slit', 'slit ', 'side slit', 'hem slit']):
+        details.append('slit')
+    if any(k in text for k in ['vent', 'back vent', 'side vent']):
+        details.append('vent')
+    if any(k in text for k in ['pleat', 'box pleat', 'kick pleat']):
         details.append('pleats')
+    if any(k in text for k in ['tuck', 'pin tuck']):
+        details.append('tuck')
     if any(k in text for k in ['shirring', 'shirr', 'smocking', 'mobiloin',
                                 'smock', 'elasticate']):
         details.append('shirring')
-    if any(k in text for k in ['ruffle', 'frill', 'gather', 'gathered tier']):
+    if any(k in text for k in ['ruffle', 'frill', 'gather', 'gathered']):
         details.append('ruffle')
+    if any(k in text for k in ['flag label', 'attach flag', 'flag lbl']):
+        details.append('flag label')
+    if any(k in text for k in ['j-stitch', 'j stitch', 'jstitch', 'j/stitch']):
+        details.append('J-stitch')
     if any(k in text for k in ['drawcord', 'draw cord', 'insert cord',
                                 'attach cord', 'thread cord']):
         details.append('drawcord')
-    if any(k in text for k in ['embroid', 'applique', ' emb ', 'heat transfer']):
-        details.append('emb')
     if any(k in text for k in ['elastic', 'insert elastic', 'attach elastic']):
         details.append('elastic')
     if any(k in text for k in ['lace', 'attach lace', 'lace trim']):
