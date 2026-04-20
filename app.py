@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from dotenv import load_dotenv, set_key
-from data_loader import load_data, search_similar_styles, get_style_processes, build_process_index, get_proc_features
+from data_loader import load_data, search_similar_styles, get_style_processes, build_process_index, get_proc_features, STYLE_ALIAS
 from cm_calculator import calculate_cm, FACTORIES, COUNTRY_FLAGS, WASH_OPTIONS
 from sketch_analyzer import analyze_sketch, CAT2_BY_CAT1, FEATURE_WEIGHTS
 from image_extractor import load_image_index, get_image, get_image_by_style
@@ -501,7 +501,9 @@ if not _sec3_open:
     st.caption(f"▼ Base style: {selected_style} — click ▼ Expand to show")
 
 # ── Always-run: load process data & init worksheet ───────────────
-df_selected_proc = get_style_processes(df_proc, selected_style, df_smv=df_smv)
+# Resolve alias: if selected style is an alias, use canonical for process/SMV lookup
+_proc_lookup_style = STYLE_ALIAS.get(str(selected_style).strip(), selected_style)
+df_selected_proc = get_style_processes(df_proc, _proc_lookup_style, df_smv=df_smv)
 ref_smv_row = results[results['STYLE'].astype(str) == str(selected_style)]
 ref_total_smv = float(ref_smv_row['TOTAL_SMV'].values[0]) if len(ref_smv_row) and 'TOTAL_SMV' in ref_smv_row else 0.0
 
@@ -514,6 +516,8 @@ if "proc_worksheet" not in st.session_state or st.session_state.get("ws_base") !
 
 # ── Collapsible display ───────────────────────────────────────────
 if _sec3_open:
+    if _proc_lookup_style != selected_style:
+        st.info(f"ℹ️ **{selected_style}** → using process data from **{_proc_lookup_style}** (alias)")
     if df_selected_proc.empty:
         st.info(f"No process data found for '{selected_style}'. Search below to add processes.")
 
