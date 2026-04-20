@@ -394,7 +394,9 @@ def search_similar_styles(df_list, df_smv, cat1=None, cat2=None, genders=None,
         cat2_kw = cat2.split(')')[-1].strip() if ')' in cat2 else cat2
         df = df[df['CAT2'].str.contains(cat2_kw, na=False, case=False, regex=False)]
     if genders:
-        df = df[df['GENDER'].isin(genders)]
+        # Normalize both sides to title-case so "1. womens" matches "1. Womens"
+        genders_norm = [g.strip().title() for g in genders]
+        df = df[df['GENDER'].astype(str).str.strip().str.title().isin(genders_norm)]
     if keyword:
         style_match = df['STYLE'].astype(str).str.contains(keyword, na=False, case=False, regex=False)
         if df_proc is not None:

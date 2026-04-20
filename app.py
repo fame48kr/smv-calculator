@@ -72,7 +72,8 @@ with col_img:
         st.image(sketch_file, caption="Uploaded Sketch", use_container_width=True)
 
 with col_info:
-    gender_options = sorted([g for g in df_list['GENDER'].dropna().astype(str).unique() if g.lower() not in ('nan', 'none', '')])
+    # Apply title-case normalization before unique() so "1. womens"/"1. Womens" merge into one
+    gender_options = sorted([g for g in df_list['GENDER'].dropna().astype(str).str.strip().str.title().unique() if g.lower() not in ('nan', 'none', '')])
     genders = st.multiselect(
         "Gender — multiple selection allowed",
         gender_options,
