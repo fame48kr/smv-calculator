@@ -409,8 +409,8 @@ if _sec2_open:
     # Build process index once for the whole grid
     _grid_proc_index = build_process_index(df_proc)
 
-    # Image grid (6 columns)
-    COLS_PER_ROW = 6
+    # Image grid (8 columns)
+    COLS_PER_ROW = 8
     for row_start in range(0, len(display_candidates), COLS_PER_ROW):
         cols = st.columns(COLS_PER_ROW)
         for ci, c in enumerate(display_candidates[row_start: row_start + COLS_PER_ROW]):
@@ -536,8 +536,8 @@ if _sec3_open:
                     st.caption(f"Priority: 🥇 Same CAT1 ({_ref_cat1[:6]}…) → 🥈 Same category group → 🥉 Other")
 
                 st.markdown("**Select a style:**")
-                GCOLS = 5
-                for rs in range(0, min(len(styles_with_kw), 20), GCOLS):
+                GCOLS = 8
+                for rs in range(0, min(len(styles_with_kw), 24), GCOLS):
                     gcols = st.columns(GCOLS)
                     for gi, sname in enumerate(styles_with_kw[rs:rs+GCOLS]):
                         with gcols[gi]:
