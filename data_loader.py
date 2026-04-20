@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import streamlit as st
 
-EXCEL_PATH = r"C:\Users\Admin\Desktop\2.품셈표 등록된 스타일 V2 (2026.02.13)- 수정본.xlsx"
+EXCEL_PATH = r"D:\업무 효율화 develop 관련\smv_calculator\2.품셈표 등록된 스타일 V2 (2026.02.13)- 수정본.xlsx"
 DATA_DIR   = "data"  # parquet files location (cloud mode)
 IS_CLOUD   = not os.path.exists(EXCEL_PATH)
 

@@ -17,7 +17,7 @@ def _clean_df(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = df[col].astype(str).replace('nan', '')
     return df
 
-EXCEL_PATH = r"C:\Users\Admin\Desktop\2.품셈표 등록된 스타일 V2 (2026.02.13)- 수정본.xlsx"
+EXCEL_PATH = r"D:\업무 효율화 develop 관련\smv_calculator\2.품셈표 등록된 스타일 V2 (2026.02.13)- 수정본.xlsx"
 THUMB_SIZE = (180, 180)
 OUT_DIR = "data"
 os.makedirs(OUT_DIR, exist_ok=True)
