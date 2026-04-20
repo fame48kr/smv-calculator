@@ -441,8 +441,8 @@ if _sec2_open:
                 except Exception as e:
                     st.error(f"Similarity analysis error: {e}")
 
-    # Image grid (4 columns)
-    COLS_PER_ROW = 4
+    # Image grid (6 columns)
+    COLS_PER_ROW = 6
     for row_start in range(0, len(display_candidates), COLS_PER_ROW):
         cols = st.columns(COLS_PER_ROW)
         for ci, c in enumerate(display_candidates[row_start: row_start + COLS_PER_ROW]):
