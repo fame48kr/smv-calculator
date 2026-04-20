@@ -95,9 +95,14 @@ with zipfile.ZipFile(EXCEL_PATH) as z:
         for anchor in root.findall(tag, NS):
             from_el = anchor.find('xdr:from', NS)
             if from_el is None: continue
-            row_el = from_el.find('xdr:row', NS)
-            if row_el is None: continue
-            df_index = int(row_el.text) - 2
+            row_from_el = from_el.find('xdr:row', NS)
+            if row_from_el is None: continue
+            row_from = int(row_from_el.text)
+            # Use center row (avg of from+to) to handle images straddling row boundaries
+            to_el = anchor.find('xdr:to', NS)
+            row_to_el = to_el.find('xdr:row', NS) if to_el is not None else None
+            row_to = int(row_to_el.text) if row_to_el is not None else row_from
+            df_index = round((row_from + row_to) / 2) - 2
             blip = anchor.find('.//a:blip', NS)
             if blip is None: continue
             rid = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
