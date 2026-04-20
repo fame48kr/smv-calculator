@@ -78,9 +78,9 @@ def build_process_index(df_proc: pd.DataFrame) -> dict:
     return idx
 
 
-def get_proc_features(style: str, proc_index: dict) -> dict:
+def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -> dict:
     """Extract structured construction features from process DB for a style.
-    Returns a dict with feature keys and detected values (or None if not found).
+    Returns a dict with feature keys appropriate for the garment_type.
     """
     text = proc_index.get(str(style).strip(), '')
     if not text:
@@ -88,7 +88,7 @@ def get_proc_features(style: str, proc_index: dict) -> dict:
 
     f = {}
 
-    # Pocket — most specific first
+    # ── Pocket (common to all types) ──────────────────────────────
     if any(k in text for k in ['side pocket', 'side seam pocket', 'side-seam pocket']):
         f['pocket'] = 'side-seam'
     elif any(k in text for k in ['welt pocket', 'welt']):
@@ -104,33 +104,95 @@ def get_proc_features(style: str, proc_index: dict) -> dict:
     else:
         f['pocket'] = 'NO'
 
-    # Hood
-    f['hood'] = 'YES' if any(k in text for k in ['attach hood', 'sew hood', 'hood panel', 'join hood']) else 'NO'
+    if garment_type == 'dress':
+        # ── DRESS-specific features ───────────────────────────────
 
-    # Sleeve construction
-    if 'raglan' in text:
-        f['sleeve_construction'] = 'raglan'
-    elif any(k in text for k in ['set in', 'set-in']):
-        f['sleeve_construction'] = 'set-in'
+        # Back closure: zipper-back / button-back / pullover
+        if any(k in text for k in ['zipper back', 'zip back', 'back zip', 'invisible zip', 'coil zip']):
+            f['back_closure'] = 'zipper-back'
+        elif any(k in text for k in ['button back', 'back button']):
+            f['back_closure'] = 'button-back'
+        else:
+            f['back_closure'] = 'pullover'
+
+        # Neckline finish: rib-band / facing / collar
+        if any(k in text for k in ['neck rib', 'neckband', 'neck band', 'rib collar', 'attach collar rib']):
+            f['neckline_finish'] = 'rib-band'
+        elif any(k in text for k in ['attach collar', 'sew collar', 'collar']):
+            f['neckline_finish'] = 'collar'
+        elif 'facing' in text:
+            f['neckline_finish'] = 'facing'
+        else:
+            f['neckline_finish'] = None
+
+        # Cuff
+        if any(k in text for k in ['attach cuff', 'cuff rib', 'rib cuff', 'cuff']):
+            f['cuff'] = 'rib'
+        else:
+            f['cuff'] = None
+
+        # Skirt construction hint (tiered = multiple skirt attach steps)
+        skirt_joins = sum(1 for k in ['attach skirt', 'join skirt', 'skirt to body', 'attach tier', 'tier seam']
+                         if k in text)
+        if skirt_joins >= 2 or any(k in text for k in ['attach tier', 'tier seam', 'ruffle']):
+            f['skirt_silhouette'] = 'tiered'
+        else:
+            f['skirt_silhouette'] = None  # cannot determine from process alone
+
+        # Sleeve length hint
+        if any(k in text for k in ['long sleeve', 'l/s sleeve', 'sleeve long']):
+            f['sleeve_length'] = 'long'
+        elif any(k in text for k in ['short sleeve', 's/s sleeve', 'sleeve short']):
+            f['sleeve_length'] = 'short'
+        elif any(k in text for k in ['sleeveless', 'no sleeve']):
+            f['sleeve_length'] = 'sleeveless'
+        else:
+            f['sleeve_length'] = None
+
+    elif garment_type == 'bottom':
+        # ── BOTTOM-specific features ──────────────────────────────
+        # Waistband construction
+        if any(k in text for k in ['waistband', 'attach band', 'waist band']):
+            f['waistband'] = 'YES'
+        else:
+            f['waistband'] = 'NO'
+        # Lining
+        if any(k in text for k in ['full lining', 'lining body']):
+            f['lining'] = 'full'
+        elif 'lining' in text:
+            f['lining'] = 'partial'
+        else:
+            f['lining'] = None
+
     else:
-        f['sleeve_construction'] = None  # cannot determine
+        # ── TOP-specific features ─────────────────────────────────
+        # Hood
+        f['hood'] = 'YES' if any(k in text for k in ['attach hood', 'sew hood', 'hood panel', 'join hood']) else 'NO'
 
-    # Cuff
-    if any(k in text for k in ['attach cuff', 'cuff rib', 'rib cuff', 'cuff']):
-        f['cuff'] = 'rib'
-    else:
-        f['cuff'] = None
+        # Sleeve construction
+        if 'raglan' in text:
+            f['sleeve_construction'] = 'raglan'
+        elif any(k in text for k in ['set in', 'set-in']):
+            f['sleeve_construction'] = 'set-in'
+        else:
+            f['sleeve_construction'] = None
 
-    # Waistband
-    f['waistband'] = 'YES' if any(k in text for k in ['waistband', 'attach band', 'waist band']) else 'NO'
+        # Cuff
+        if any(k in text for k in ['attach cuff', 'cuff rib', 'rib cuff', 'cuff']):
+            f['cuff'] = 'rib'
+        else:
+            f['cuff'] = None
 
-    # Lining
-    if any(k in text for k in ['full lining', 'lining body']):
-        f['lining'] = 'full'
-    elif 'lining' in text:
-        f['lining'] = 'partial'
-    else:
-        f['lining'] = None
+        # Waistband
+        f['waistband'] = 'YES' if any(k in text for k in ['waistband', 'attach band', 'waist band']) else 'NO'
+
+        # Lining
+        if any(k in text for k in ['full lining', 'lining body']):
+            f['lining'] = 'full'
+        elif 'lining' in text:
+            f['lining'] = 'partial'
+        else:
+            f['lining'] = None
 
     return f
 
