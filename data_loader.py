@@ -107,13 +107,13 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
     if garment_type == 'dress':
         # ── DRESS-specific features ───────────────────────────────
 
-        # Back closure: zipper-back / button-back / pullover
+        # Back closure: only show when positively detected from process keywords
         if any(k in text for k in ['zipper back', 'zip back', 'back zip', 'invisible zip', 'coil zip']):
             f['back_closure'] = 'zipper-back'
         elif any(k in text for k in ['button back', 'back button']):
             f['back_closure'] = 'button-back'
         else:
-            f['back_closure'] = 'pullover'
+            f['back_closure'] = None  # cannot determine — do not assume pullover
 
         # Neckline finish: rib-band / facing / collar
         if any(k in text for k in ['neck rib', 'neckband', 'neck band', 'rib collar', 'attach collar rib']):
