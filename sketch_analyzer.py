@@ -354,6 +354,41 @@ def _apply_caps(entry: dict, sf: dict, profile: str) -> None:
 
 
 # ── analyze_sketch ────────────────────────────────────────────────
+def _extract_dress_features_pass2(client, image_b64: str, notes: str) -> dict:
+    """Targeted second-pass call to extract dress-specific fields the first pass missed."""
+    prompt = f"""You are a garment analyst examining a dress sketch.
+Construction context: {notes}
+
+Return ONLY this JSON — no extra text:
+{{
+  "skirt_silhouette": "<a-line|tiered-gathered|straight|bubble|pleated>",
+  "waist_treatment": "<empire|drop-waist|natural|fitted|gathered>",
+  "sleeve_length": "<sleeveless|short|long>",
+  "sleeve_construction": "<set-in|raglan>",
+  "back_closure": "<pullover|zipper-back|button-back>",
+  "neckline_finish": "<rib-band|facing|self-fabric|collar>"
+}}
+
+Definitions:
+- skirt_silhouette: a-line=smooth flare no horizontal tier seams; tiered-gathered=two+ horizontal tier seams each gathered; straight=column/pencil; bubble=gathered & tucked at hem; pleated=structured pleats
+- waist_treatment: empire=seam just below bust; drop-waist=seam well below natural waist at hip; natural=seam at natural waist; fitted=no distinct waist seam; gathered=elasticated/gathered waist
+- sleeve_construction: raglan=diagonal seam from underarm to neckline no shoulder seam; set-in=closed armhole curve
+- neckline_finish: rib-band=separate ribbed band at neckline; facing=sewn-in facing; self-fabric=self-fabric binding; collar=attached collar piece"""
+
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=300,
+        messages=[{"role": "user", "content": [
+            {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image_b64}},
+            {"type": "text", "text": prompt}
+        ]}]
+    )
+    text = resp.content[0].text.strip()
+    if "```" in text:
+        text = text.split("```")[1].replace("json", "").strip()
+    return json.loads(text)
+
+
 def analyze_sketch(image_bytes: bytes, gender: str, api_key: str) -> dict:
     """Analyze sketch — auto-detects TOP or BOTTOM and extracts appropriate features."""
     client = anthropic.Anthropic(api_key=api_key)
@@ -384,6 +419,11 @@ STEP 1: Determine garment_type
   - "bottom" → pants, leggings, skirts, shorts, joggers, etc.
   - "dress"  → one-piece dress (CAT1 = C-A) TOP - DRESS)
   - Use the selected CAT1 and the sketch to decide.
+
+  ⚠️ CRITICAL RULES:
+  - If CAT1 = "C-A) TOP - DRESS" → garment_type MUST be "dress". Use ONLY the DRESS format below.
+  - If CAT1 starts with "B-" → garment_type MUST be "bottom". Use ONLY the BOTTOM format below.
+  - DO NOT use the TOP format for dress or bottom garments.
 
 STEP 2: Extract features based on garment_type.
 
@@ -539,6 +579,37 @@ For BOTTOM:
         text = text.split("```")[1].replace("json", "").strip()
 
     result = json.loads(text)
+
+    # Force garment_type from cat1 — AI sometimes returns wrong type for dress/bottom
+    cat1_val = result.get("cat1", "")
+    if _is_dress(cat1_val):
+        result["garment_type"] = "dress"
+    elif _is_bottom(cat1_val):
+        result["garment_type"] = "bottom"
+
+    feats = result.setdefault("features", {})
+
+    # If dress but AI returned nested sleeve dict (TOP format), flatten it
+    if result.get("garment_type") == "dress" and isinstance(feats.get("sleeve"), dict):
+        sleeve = feats.pop("sleeve")
+        if not feats.get("sleeve_length"):
+            feats["sleeve_length"] = sleeve.get("length", "")
+        if not feats.get("sleeve_construction"):
+            feats["sleeve_construction"] = sleeve.get("construction", "")
+
+    # If dress but key dress-specific fields are missing, run a second targeted pass
+    _DRESS_KEY_FIELDS = ("skirt_silhouette", "waist_treatment", "back_closure", "neckline_finish")
+    if result.get("garment_type") == "dress" and not any(feats.get(k) for k in _DRESS_KEY_FIELDS):
+        try:
+            dress_feats = _extract_dress_features_pass2(
+                client, image_b64, result.get("construction_notes", "")
+            )
+            for k, v in dress_feats.items():
+                if v and str(v).lower() not in ("?", "none", ""):
+                    feats.setdefault(k, v)  # don't overwrite fields already populated
+        except Exception:
+            pass  # second pass failure is non-fatal
+
     result["profile"] = get_profile(result.get("cat1", ""))
     return result
 

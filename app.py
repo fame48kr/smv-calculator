@@ -144,8 +144,11 @@ with col_info:
                     with col_a:
                         st.markdown(f"**Skirt silhouette:** {f.get('skirt_silhouette','?')}")
                         st.markdown(f"**Waist treatment:** {f.get('waist_treatment','?')}")
-                        st.markdown(f"**Sleeve length:** {f.get('sleeve_length','?')}")
-                        st.markdown(f"**Sleeve construction:** {f.get('sleeve_construction','?')}")
+                        _slv = f.get('sleeve', {})
+                        _slv_len = f.get('sleeve_length') or _slv.get('length', '?')
+                        _slv_con = f.get('sleeve_construction') or _slv.get('construction', '?')
+                        st.markdown(f"**Sleeve length:** {_slv_len}")
+                        st.markdown(f"**Sleeve construction:** {_slv_con}")
                     with col_b:
                         pkt = f.get('pocket', {})
                         st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
