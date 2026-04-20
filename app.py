@@ -673,18 +673,39 @@ if _sec3_open:
 final_ws = st.session_state.proc_worksheet
 included = final_ws[final_ws['INCLUDE'] == True]
 current_smv = float(included['SMV'].sum()) if not included.empty else 0.0
-total_smv = current_smv
 
 st.divider()
 c1, c2, c3 = st.columns(3)
 c1.metric("Included Processes", f"{len(included)}")
 c2.metric("Excluded Processes", f"{len(final_ws) - len(included)}")
-c3.metric("Final Total SMV ★", f"{total_smv:.4f} min")
+c3.metric("Process Analysis SMV", f"{current_smv:.4f} min")
 
 # ══════════════════════════════════════════════
 # STEP 4: CM Calculation
 # ══════════════════════════════════════════════
 st.header("④ CM Calculation")
+
+# ── SMV source selector ───────────────────────────────────────────
+smv_mode = st.radio(
+    "SMV Source",
+    ["📋 Process Analysis", "✏️ Manual Input"],
+    horizontal=True,
+    key="smv_mode",
+    help="Use the SMV calculated from the process worksheet, or enter a value directly."
+)
+
+if smv_mode == "✏️ Manual Input":
+    total_smv = st.number_input(
+        "SMV (min)",
+        min_value=0.01, max_value=999.0,
+        value=round(current_smv, 4) if current_smv > 0 else 10.0,
+        step=0.01, format="%.4f",
+        key="manual_smv",
+        help="Enter the SMV value directly. Process worksheet is ignored."
+    )
+    st.caption(f"Process Analysis SMV (reference): **{current_smv:.4f} min**")
+else:
+    total_smv = current_smv
 
 if total_smv <= 0:
     st.warning("Please check Total SMV.")
