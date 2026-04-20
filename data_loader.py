@@ -373,6 +373,28 @@ def _process_prescore(style_str: str, proc_index: dict, sf: dict) -> float:
     if neckline:
         check(None, None, _PROC_MUST_HAVE.get(('neckline', neckline), []), 6, positive=True)
 
+    # Front closure: zipper vs button (weight 20 — hard signal for open-front styles)
+    front_closure = str(sf.get('front_closure', '') or '').lower()
+    if front_closure:
+        _ZIPPER_KWS = ['zipper', 'attach zip', 'zip guard', 'invisible zip', 'coil zip']
+        _BUTTON_KWS = ['buttonhole', 'button hole', 'attach button', 'sew button',
+                       'bartack button', 'button loop']
+        ref_has_zipper = any(k in text for k in _ZIPPER_KWS)
+        ref_has_button = any(k in text for k in _BUTTON_KWS)
+        sketch_is_zipper = any(k in front_closure for k in ['zip', 'zipper'])
+        sketch_is_button = any(k in front_closure for k in ['button', 'snap', 'btn'])
+
+        if sketch_is_zipper:
+            if ref_has_zipper:
+                score += 20   # match
+            elif ref_has_button:
+                score -= 20   # hard mismatch: button style vs zipper input
+        elif sketch_is_button:
+            if ref_has_button:
+                score += 20   # match
+            elif ref_has_zipper and not ref_has_button:
+                score -= 20   # hard mismatch: zipper style vs button input
+
     return max(0, min(100, score))
 
 
@@ -562,6 +584,25 @@ def _feature_prescore(row, sf: dict) -> float:
     c_hits = construction_hits.get(slv_c2, [])
     if slv_c2 and c_hits and any(k in cat3 + ' ' + cat4 for k in c_hits):
         score += 5
+
+    # Front closure: zipper vs button in CAT text (weight 20)
+    front_closure = str(sf.get('front_closure', '') or '').lower()
+    if front_closure:
+        ref_has_zipper = any(k in text for k in ['zipper', 'zip'])
+        ref_has_button = any(k in text for k in ['button', 'btn'])
+        sketch_is_zipper = any(k in front_closure for k in ['zip', 'zipper'])
+        sketch_is_button = any(k in front_closure for k in ['button', 'snap', 'btn'])
+
+        if sketch_is_zipper:
+            if ref_has_zipper:
+                score += 20
+            elif ref_has_button and not ref_has_zipper:
+                score -= 20
+        elif sketch_is_button:
+            if ref_has_button:
+                score += 20
+            elif ref_has_zipper and not ref_has_button:
+                score -= 20
 
     return float(score)
 
