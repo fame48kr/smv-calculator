@@ -78,6 +78,63 @@ def build_process_index(df_proc: pd.DataFrame) -> dict:
     return idx
 
 
+def get_proc_features(style: str, proc_index: dict) -> dict:
+    """Extract structured construction features from process DB for a style.
+    Returns a dict with feature keys and detected values (or None if not found).
+    """
+    text = proc_index.get(str(style).strip(), '')
+    if not text:
+        return {}
+
+    f = {}
+
+    # Pocket — most specific first
+    if any(k in text for k in ['side pocket', 'side seam pocket', 'side-seam pocket']):
+        f['pocket'] = 'side-seam'
+    elif any(k in text for k in ['welt pocket', 'welt']):
+        f['pocket'] = 'welt'
+    elif any(k in text for k in ['kangaroo', 'pouch']):
+        f['pocket'] = 'kangaroo'
+    elif 'patch pocket' in text:
+        f['pocket'] = 'patch'
+    elif 'chest pocket' in text:
+        f['pocket'] = 'chest'
+    elif 'pocket' in text:
+        f['pocket'] = 'YES'
+    else:
+        f['pocket'] = 'NO'
+
+    # Hood
+    f['hood'] = 'YES' if any(k in text for k in ['attach hood', 'sew hood', 'hood panel', 'join hood']) else 'NO'
+
+    # Sleeve construction
+    if 'raglan' in text:
+        f['sleeve_construction'] = 'raglan'
+    elif any(k in text for k in ['set in', 'set-in']):
+        f['sleeve_construction'] = 'set-in'
+    else:
+        f['sleeve_construction'] = None  # cannot determine
+
+    # Cuff
+    if any(k in text for k in ['attach cuff', 'cuff rib', 'rib cuff', 'cuff']):
+        f['cuff'] = 'rib'
+    else:
+        f['cuff'] = None
+
+    # Waistband
+    f['waistband'] = 'YES' if any(k in text for k in ['waistband', 'attach band', 'waist band']) else 'NO'
+
+    # Lining
+    if any(k in text for k in ['full lining', 'lining body']):
+        f['lining'] = 'full'
+    elif 'lining' in text:
+        f['lining'] = 'partial'
+    else:
+        f['lining'] = None
+
+    return f
+
+
 # Keywords that SHOULD / SHOULD NOT appear in processes per feature value
 _PROC_MUST_HAVE = {
     ('hood', True):                   ['hood'],

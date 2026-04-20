@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from dotenv import load_dotenv, set_key
-from data_loader import load_data, search_similar_styles, get_style_processes, build_process_index
+from data_loader import load_data, search_similar_styles, get_style_processes, build_process_index, get_proc_features
 from cm_calculator import calculate_cm, FACTORIES, COUNTRY_FLAGS, WASH_OPTIONS
 from sketch_analyzer import analyze_sketch, CAT2_BY_CAT1, rank_by_similarity, FEATURE_WEIGHTS
 from image_extractor import load_image_index, get_image, get_image_by_style
@@ -444,6 +444,9 @@ if _sec2_open:
                 except Exception as e:
                     st.error(f"Similarity analysis error: {e}")
 
+    # Build process index once for the whole grid
+    _grid_proc_index = build_process_index(df_proc)
+
     # Image grid (6 columns)
     COLS_PER_ROW = 6
     for row_start in range(0, len(display_candidates), COLS_PER_ROW):
@@ -465,22 +468,45 @@ if _sec2_open:
                 if reason:
                     st.caption(f"*{reason}*")
 
-                det = c.get('detected_features', {})
-                _an_gtype = st.session_state.analysis.get('garment_type', 'top') if st.session_state.get('analysis') else 'top'
-                if _an_gtype == "bottom":
-                    wb_det  = det.get('wb', det.get('waistband_construction', ''))
-                    wb_ev   = det.get('wb_ev', det.get('waistband_construction_evidence', ''))
-                    leg_det = det.get('leg', det.get('leg_silhouette', ''))
-                    if wb_det:
-                        st.caption(f"👖 WB: **{wb_det}**" + (f" — {wb_ev}" if wb_ev else ""))
-                    if leg_det:
-                        st.caption(f"📐 Leg: **{leg_det}**")
-                else:
-                    slv_ev   = det.get('slv_ev', det.get('sleeve_construction_evidence', ''))
-                    slv_type = det.get('slv', det.get('sleeve_construction', ''))
-                    if slv_type:
-                        st.caption(f"🪡 Sleeve: **{slv_type}**" + (f" — {slv_ev}" if slv_ev else ""))
+                # ── Process DB Construction Features ──────────────────
+                pf = get_proc_features(c['style'], _grid_proc_index)
+                if pf:
+                    _an_gtype = st.session_state.analysis.get('garment_type', 'top') if st.session_state.get('analysis') else 'top'
+                    lines = []
 
+                    # Pocket (always show)
+                    pkt_val = pf.get('pocket', 'NO')
+                    pkt_icon = '✅' if pkt_val not in ('NO', None) else '❌'
+                    lines.append(f"{pkt_icon} pkt: **{pkt_val}**")
+
+                    if _an_gtype == 'bottom':
+                        wb = pf.get('waistband')
+                        if wb:
+                            lines.append(f"{'✅' if wb=='YES' else '❌'} wb: **{wb}**")
+                        ln = pf.get('lining')
+                        if ln:
+                            lines.append(f"lining: **{ln}**")
+                    else:
+                        # Hood
+                        hood = pf.get('hood', 'NO')
+                        lines.append(f"{'✅' if hood=='YES' else '❌'} hood: **{hood}**")
+                        # Sleeve construction
+                        slv_c = pf.get('sleeve_construction')
+                        if slv_c:
+                            lines.append(f"slv: **{slv_c}**")
+                        # Cuff
+                        cuff = pf.get('cuff')
+                        if cuff:
+                            lines.append(f"cuff: **{cuff}**")
+                        # Waistband
+                        wb = pf.get('waistband')
+                        if wb == 'YES':
+                            lines.append(f"wb: **{wb}**")
+
+                    st.caption("🔩 " + "  \n".join(lines))
+
+                # ── AI similarity matched/mismatched features ─────────
+                det = c.get('detected_features', {})
                 matched = c.get('matched_features', [])
                 mismatched = c.get('mismatched_features', [])
                 if matched or mismatched:
