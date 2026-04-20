@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from dotenv import load_dotenv, set_key
-from data_loader import load_data, search_similar_styles, get_style_processes
+from data_loader import load_data, search_similar_styles, get_style_processes, build_process_index
 from cm_calculator import calculate_cm, FACTORIES, COUNTRY_FLAGS, WASH_OPTIONS
 from sketch_analyzer import analyze_sketch, CAT2_BY_CAT1, rank_by_similarity, FEATURE_WEIGHTS
 from image_extractor import load_image_index, get_image, get_image_by_style
@@ -432,10 +432,12 @@ if _sec2_open:
                     sketch_features = st.session_state.analysis.get('features')
                     _gtype = st.session_state.analysis.get('garment_type', 'top')
                     _prof  = st.session_state.analysis.get('profile', '')
+                    _proc_idx = build_process_index(df_proc)
                     ranked = rank_by_similarity(sketch_bytes, candidates, api_key,
                                                 sketch_features=sketch_features,
                                                 garment_type=_gtype,
-                                                profile=_prof)
+                                                profile=_prof,
+                                                proc_index=_proc_idx)
                     st.session_state.ranked_candidates = ranked
                     if ranked:
                         st.session_state.selected_style = ranked[0]['style']

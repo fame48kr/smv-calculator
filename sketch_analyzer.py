@@ -282,9 +282,14 @@ def _scoring_prompt(profile: str, n: int, summary: str) -> str:
 NEW SKETCH features:
 {summary}
 
+⚠ IMPORTANT: Some REF images include "⚙ Process DB (ground truth)" hints derived from
+actual manufacturing process records. These are FACTS — treat them as more reliable than
+visual inspection alone. For example, "pocket: side-seam" means the style definitely has
+a side-seam pocket even if it is not visible in the photo.
+
 For each REF-1 to REF-{n}:
 
-STEP 1 — Identify these features:
+STEP 1 — Identify these features (use Process DB hints where provided):
 {hints}
 
 STEP 2 — Score vs NEW SKETCH (0-100):
@@ -667,11 +672,55 @@ def _feature_match_score(sketch_features: dict, ref_features: dict,
     return min(raw, hard_cap), mismatches
 
 
+# ── Process construction hints ────────────────────────────────────
+def _proc_construction_hints(style: str, proc_index: dict) -> str:
+    """Extract key construction hints from process DB text for a given style.
+    These are ground-truth facts invisible in images (e.g. side-seam pockets).
+    """
+    text = proc_index.get(str(style).strip(), '')
+    if not text:
+        return ""
+    hints = []
+
+    # Pocket — check most specific first
+    if any(k in text for k in ['side pocket', 'side seam pocket', 'side-seam pocket']):
+        hints.append("pocket: side-seam")
+    elif any(k in text for k in ['welt pocket', 'welt']):
+        hints.append("pocket: welt")
+    elif any(k in text for k in ['kangaroo', 'pouch']):
+        hints.append("pocket: kangaroo")
+    elif any(k in text for k in ['patch pocket']):
+        hints.append("pocket: patch")
+    elif any(k in text for k in ['chest pocket']):
+        hints.append("pocket: chest")
+    elif 'pocket' in text:
+        hints.append("pocket: YES")
+
+    # Hood
+    if any(k in text for k in ['attach hood', 'sew hood', 'hood panel', 'join hood']):
+        hints.append("hood: YES")
+
+    # Raglan sleeve
+    if 'raglan' in text:
+        hints.append("sleeve: raglan")
+
+    # Cuff
+    if any(k in text for k in ['attach cuff', 'cuff rib', 'rib cuff']):
+        hints.append("cuff: rib")
+
+    # Waistband
+    if any(k in text for k in ['waistband', 'attach band', 'waist band']):
+        hints.append("waistband: YES")
+
+    return ", ".join(hints)
+
+
 # ── rank_by_similarity ────────────────────────────────────────────
 def rank_by_similarity(sketch_bytes: bytes, candidates: list, api_key: str,
                        sketch_features: dict | None = None,
                        garment_type: str = "top",
-                       profile: str = "") -> list:
+                       profile: str = "",
+                       proc_index: dict | None = None) -> list:
     """Rank candidates by visual + feature similarity to sketch."""
     client = anthropic.Anthropic(api_key=api_key)
     valid = [c for c in candidates if c.get('img_bytes')]
@@ -698,7 +747,10 @@ def rank_by_similarity(sketch_bytes: bytes, candidates: list, api_key: str,
         ext = "png" if c['img_bytes'][:4] == b'\x89PNG' else "jpeg"
         b64 = base64.standard_b64encode(c['img_bytes']).decode("utf-8")
         content.append({"type": "image", "source": {"type": "base64", "media_type": f"image/{ext}", "data": b64}})
-        content.append({"type": "text", "text": f"REF-{i}: Style {c['style']}"})
+        # Add process DB hints as ground-truth supplement to visual analysis
+        proc_hint = _proc_construction_hints(c['style'], proc_index) if proc_index else ""
+        hint_text = f"\n  ⚙ Process DB (ground truth): {proc_hint}" if proc_hint else ""
+        content.append({"type": "text", "text": f"REF-{i}: Style {c['style']}{hint_text}"})
 
     scoring_prompt = _scoring_prompt(profile, len(to_rank), sketch_summary)
     content.append({"type": "text", "text": scoring_prompt})
