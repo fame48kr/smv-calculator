@@ -486,6 +486,16 @@ def _feature_prescore(row, sf: dict) -> float:
     return float(score)
 
 
+# ── Style aliases ────────────────────────────────────────────────
+# Maps alias style → canonical style for SMV/process data lookup.
+# The alias keeps its own image and style number, but inherits SMV data
+# from the canonical style.  Add entries here when two style numbers
+# refer to the same design.
+STYLE_ALIAS: dict[str, str] = {
+    '816631': 'D50027',
+}
+
+
 # ── Combined pre-ranking ──────────────────────────────────────────
 def _combined_prescore(row, sf: dict, proc_index: dict, smv_range: tuple) -> float:
     """
@@ -528,10 +538,23 @@ def search_similar_styles(df_list, df_smv, cat1=None, cat2=None, genders=None,
         else:
             df = df[style_match]
 
-    smv_lookup = df_smv.drop_duplicates('STYLE')[['STYLE', 'TOTAL_SMV', 'PROC_COUNT', 'MACHINES']]
+    smv_lookup = df_smv.drop_duplicates('STYLE')[['STYLE', 'TOTAL_SMV', 'PROC_COUNT', 'MACHINES']].copy()
     smv_lookup['STYLE'] = smv_lookup['STYLE'].astype(str).str.strip()
     df['STYLE'] = df['STYLE'].astype(str).str.strip()
-    df = df.merge(smv_lookup, on='STYLE', how='left')
+
+    # Expand smv_lookup with alias entries so aliased styles inherit SMV data
+    alias_rows = []
+    for alias, canonical in STYLE_ALIAS.items():
+        canon_row = smv_lookup[smv_lookup['STYLE'] == canonical]
+        if not canon_row.empty:
+            row = canon_row.copy()
+            row['STYLE'] = alias
+            alias_rows.append(row)
+    if alias_rows:
+        smv_lookup = pd.concat([smv_lookup] + alias_rows, ignore_index=True)
+
+    # Inner join: only keep styles that have SMV data (or are aliased to one)
+    df = df.merge(smv_lookup, on='STYLE', how='inner')
 
     if sketch_features and not df.empty:
         proc_index = build_process_index(df_proc) if df_proc is not None else {}
