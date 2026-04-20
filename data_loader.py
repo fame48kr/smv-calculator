@@ -194,6 +194,44 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
         else:
             f['lining'] = None
 
+    # ── Universal construction details (garment-type agnostic) ──────
+    # Detected from process keywords; shown as compact badges on the card
+    details = []
+
+    if any(k in text for k in ['collar', 'attach collar', 'sew collar', 'inner collar',
+                                'join collar', 'invert collar', 'topstitch collar',
+                                'collar band']):
+        details.append('collar')
+    if any(k in text for k in ['zipper', 'zip ', 'zip guard', 'invisible zip',
+                                'coil zip', 'attach zip', 'topstitch zip']):
+        details.append('zipper')
+    if any(k in text for k in ['placket', 'plkt', 'cf panel', 'button band',
+                                'button placket']):
+        details.append('placket')
+    if any(k in text for k in [' slit', 'slit ', 'side slit', 'vent', 'hem slit']):
+        details.append('slit')
+    if any(k in text for k in ['yoke', 'attach yoke', 'join yoke', 'sew yoke']):
+        details.append('yoke')
+    if any(k in text for k in ['pleat', 'tuck', 'box pleat', 'kick pleat']):
+        details.append('pleats')
+    if any(k in text for k in ['shirring', 'shirr', 'smocking', 'mobiloin',
+                                'smock', 'elasticate']):
+        details.append('shirring')
+    if any(k in text for k in ['ruffle', 'frill', 'gather', 'gathered tier']):
+        details.append('ruffle')
+    if any(k in text for k in ['drawcord', 'draw cord', 'insert cord',
+                                'attach cord', 'thread cord']):
+        details.append('drawcord')
+    if any(k in text for k in ['embroid', 'applique', ' emb ', 'heat transfer']):
+        details.append('emb')
+    if any(k in text for k in ['elastic', 'insert elastic', 'attach elastic']):
+        details.append('elastic')
+    if any(k in text for k in ['lace', 'attach lace', 'lace trim']):
+        details.append('lace')
+
+    if details:
+        f['details'] = details
+
     return f
 
 

@@ -472,6 +472,9 @@ if _sec2_open:
                         if wb == 'YES':
                             lines.append(f"wb: **{wb}**")
 
+                    details = pf.get('details', [])
+                    if details:
+                        lines.append("📌 " + " · ".join(details))
                     st.caption("🔩 " + "  \n".join(lines))
 
                 is_selected = (st.session_state.selected_style == c['style'])
