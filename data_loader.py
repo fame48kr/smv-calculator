@@ -227,10 +227,16 @@ def _feature_prescore(row, sf: dict) -> float:
     cat4 = str(row.get('CAT4', '') or '').lower()
     text = cat2 + ' ' + cat3 + ' ' + cat4
 
+    profile      = sf.get('_garment_type', '')   # reused field; may hold profile or garment_type
     garment_type = sf.get('_garment_type', 'top')
 
+    # Treat jacket/vest/cardigan like pullover for CAT text scoring (hood+sleeve signals)
+    DRESS_PROFILES  = {'dress'}
+    BOTTOM_PROFILES = {'pants', 'leggings', 'skirt', 'diaper'}
+    JACKET_PROFILES = {'jacket', 'vest', 'cardigan'}
+
     # ── DRESS pre-score ──────────────────────────────────────────────
-    if garment_type == 'dress':
+    if garment_type == 'dress' or profile in DRESS_PROFILES:
         # Sleeve length from CAT3 (weight 15 match / -15 mismatch)
         slv_len = sf.get('sleeve_length', '')
         slv_hits = {

@@ -118,8 +118,9 @@ with col_info:
         # Construction features panel
         feats = a.get('features', {})
         gtype = a.get('garment_type', 'top')
+        prof  = a.get('profile', '')
         if feats:
-            with st.expander("🔍 Construction Features (used for similarity scoring)", expanded=True):
+            with st.expander(f"🔍 Construction Features — {prof.upper() if prof else gtype.upper()} (used for similarity scoring)", expanded=True):
                 f = feats
                 col_a, col_b, col_c = st.columns(3)
 
@@ -155,7 +156,132 @@ with col_info:
                         st.markdown(f"**Neckline:** {f.get('neckline','?')}")
                         st.markdown(f"**Neckline finish:** {f.get('neckline_finish','?')}")
                         st.markdown(f"**Cuff:** {f.get('cuff','none')}")
-                else:
+                elif prof == "jacket":
+                    with col_a:
+                        st.markdown(f"**Front closure:** {f.get('front_closure','?')}")
+                        st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                    with col_b:
+                        st.markdown(f"**Lining:** {f.get('lining','none')}")
+                        slv = f.get('sleeve', {})
+                        st.markdown(f"**Sleeve construction:** {slv.get('construction','?')}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                    with col_c:
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
+                        st.markdown(f"**Back detail:** {f.get('back_detail','none')}")
+
+                elif prof == "tshirt":
+                    with col_a:
+                        st.markdown(f"**Neckline:** {f.get('neckline','?')}")
+                        slv = f.get('sleeve', {})
+                        st.markdown(f"**Sleeve length:** {slv.get('length','?')}")
+                        st.markdown(f"**Sleeve construction:** {slv.get('construction','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
+                    with col_c:
+                        st.markdown(f"**Back detail:** {f.get('back_detail','none')}")
+
+                elif prof in ("tank", "cami"):
+                    with col_a:
+                        st.markdown(f"**Neckline:** {f.get('neckline','?')}")
+                        st.markdown(f"**Strap style:** {f.get('strap_style','?')}")
+                        st.markdown(f"**Back detail:** {f.get('back_detail','?')}")
+                    with col_b:
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+
+                elif prof == "sportsbra":
+                    with col_a:
+                        st.markdown(f"**Pad type:** {f.get('pad_type','?')}")
+                        st.markdown(f"**Back style:** {f.get('back_style','?')}")
+                    with col_b:
+                        st.markdown(f"**Strap style:** {f.get('strap_style','?')}")
+                        st.markdown(f"**Lining:** {f.get('lining','none')}")
+
+                elif prof == "cardigan":
+                    with col_a:
+                        st.markdown(f"**Front closure:** {f.get('front_closure','?')}")
+                        st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
+                        slv = f.get('sleeve', {})
+                        st.markdown(f"**Sleeve length:** {slv.get('length','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+
+                elif prof == "vest":
+                    with col_a:
+                        st.markdown(f"**Front closure:** {f.get('front_closure','?')}")
+                        st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                    with col_b:
+                        st.markdown(f"**Lining:** {f.get('lining','none')}")
+                        st.markdown(f"**Back detail:** {f.get('back_detail','none')}")
+
+                elif prof in ("romper", "bodysuit", "jumpsuit", "unionsuit"):
+                    with col_a:
+                        slv = f.get('sleeve', {})
+                        st.markdown(f"**Sleeve length:** {slv.get('length','?')}")
+                        st.markdown(f"**Leg length:** {f.get('leg_length','?')}")
+                        st.markdown(f"**Neckline:** {f.get('neckline','?')}")
+                    with col_b:
+                        st.markdown(f"**Front closure:** {f.get('front_closure','?')}")
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                    with col_c:
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
+                        if prof == "jumpsuit":
+                            st.markdown(f"**Waist treatment:** {f.get('waist_treatment','?')}")
+
+                elif prof == "pajama":
+                    with col_a:
+                        slv = f.get('sleeve', {})
+                        st.markdown(f"**Sleeve length:** {slv.get('length','?')}")
+                        st.markdown(f"**Leg length:** {f.get('leg_length','?')}")
+                        st.markdown(f"**Neckline:** {f.get('neckline','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        st.markdown(f"**Collar:** {f.get('collar', f.get('neckline','?'))}")
+                        st.markdown(f"**Cuff:** {f.get('cuff','none')}")
+
+                elif prof in ("leggings", "diaper"):
+                    with col_a:
+                        st.markdown(f"**Waistband construction:** {f.get('waistband_construction','?')}")
+                        st.markdown(f"**Leg silhouette:** {f.get('leg_silhouette','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        st.markdown(f"**Drawcord:** {'✅ Yes' if f.get('drawcord') else '❌ No'}")
+
+                elif prof == "skirt":
+                    with col_a:
+                        st.markdown(f"**Skirt silhouette:** {f.get('skirt_silhouette','?')}")
+                        st.markdown(f"**Waist treatment:** {f.get('waist_treatment','?')}")
+                        st.markdown(f"**Length:** {f.get('length','?')}")
+                    with col_b:
+                        pkt = f.get('pocket', {})
+                        st.markdown(f"**Pocket:** {'✅ ' + pkt.get('type','') if pkt.get('present') else '❌ No'}")
+                        hem = f.get('hem', {})
+                        st.markdown(f"**Hem:** {hem.get('shape','?')} / {hem.get('finish','?')}")
+                        st.markdown(f"**Lining:** {f.get('lining','none')}")
+
+                else:  # pullover / swimcover / default top
                     with col_a:
                         st.markdown(f"**Hood:** {'✅ Yes' if f.get('hood') else '❌ No'}")
                         slv = f.get('sleeve', {})
@@ -212,7 +338,9 @@ sel_genders = genders if use_gender else []
 _sketch_feats = None
 if st.session_state.get('analysis'):
     _sketch_feats = dict(st.session_state.analysis.get('features') or {})
-    _sketch_feats['_garment_type'] = st.session_state.analysis.get('garment_type', 'top')
+    _gtype_inj = st.session_state.analysis.get('garment_type', 'top')
+    _prof_inj  = st.session_state.analysis.get('profile', _gtype_inj)
+    _sketch_feats['_garment_type'] = _prof_inj  # profile takes priority for prescore branching
 
 results = search_similar_styles(
     df_list, df_smv,
@@ -293,9 +421,11 @@ if _sec2_open:
                             c['img_bytes'] = get_image(c.get('orig_idx', -1))
                     sketch_features = st.session_state.analysis.get('features')
                     _gtype = st.session_state.analysis.get('garment_type', 'top')
+                    _prof  = st.session_state.analysis.get('profile', '')
                     ranked = rank_by_similarity(sketch_bytes, candidates, api_key,
                                                 sketch_features=sketch_features,
-                                                garment_type=_gtype)
+                                                garment_type=_gtype,
+                                                profile=_prof)
                     st.session_state.ranked_candidates = ranked
                     if ranked:
                         st.session_state.selected_style = ranked[0]['style']
