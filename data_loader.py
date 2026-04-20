@@ -639,10 +639,20 @@ def search_similar_styles(df_list, df_smv, cat1=None, cat2=None, genders=None,
                           df_proc: pd.DataFrame | None = None):
     df = df_list.copy()
     if cat1:
-        df = df[df['CAT1'].str.contains(cat1, na=False, case=False, regex=False)]
+        cat1_list = cat1 if isinstance(cat1, list) else [cat1]
+        if cat1_list:
+            mask = pd.Series(False, index=df.index)
+            for c1 in cat1_list:
+                mask |= df['CAT1'].str.contains(c1, na=False, case=False, regex=False)
+            df = df[mask]
     if cat2:
-        cat2_kw = cat2.split(')')[-1].strip() if ')' in cat2 else cat2
-        df = df[df['CAT2'].str.contains(cat2_kw, na=False, case=False, regex=False)]
+        cat2_list = cat2 if isinstance(cat2, list) else [cat2]
+        if cat2_list:
+            mask = pd.Series(False, index=df.index)
+            for c2 in cat2_list:
+                kw = c2.split(')')[-1].strip() if ')' in c2 else c2
+                mask |= df['CAT2'].str.contains(kw, na=False, case=False, regex=False)
+            df = df[mask]
     if genders:
         # Normalize both sides to title-case so "1. womens" matches "1. Womens"
         genders_norm = [g.strip().title() for g in genders]

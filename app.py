@@ -106,13 +106,18 @@ with col_info:
 
         cat1_options = list(CAT2_BY_CAT1.keys())
         detected_cat1 = a.get('cat1', '')
-        cat1_idx = next((i for i, c in enumerate(cat1_options) if detected_cat1 in c or c in detected_cat1), 0)
-        sel_cat1 = st.selectbox("Category #1", cat1_options, index=cat1_idx, key="sel_cat1")
+        default_cat1 = [c for c in cat1_options if detected_cat1 in c or c in detected_cat1][:1]
+        sel_cat1 = st.multiselect("Category #1", cat1_options, default=default_cat1, key="sel_cat1")
 
-        cat2_opts = CAT2_BY_CAT1.get(sel_cat1, [])
+        # Cat2 options = union of all selected Cat1 options
+        cat2_opts = []
+        for c1 in (sel_cat1 or cat1_options):
+            for c2 in CAT2_BY_CAT1.get(c1, []):
+                if c2 not in cat2_opts:
+                    cat2_opts.append(c2)
         detected_cat2 = a.get('cat2', '')
-        cat2_idx = next((i for i, c in enumerate(cat2_opts) if detected_cat2 in c or c in detected_cat2), 0)
-        sel_cat2 = st.selectbox("Category #2", cat2_opts, index=cat2_idx, key="sel_cat2")
+        default_cat2 = [c for c in cat2_opts if detected_cat2 in c or c in detected_cat2][:1]
+        sel_cat2 = st.multiselect("Category #2", cat2_opts, default=default_cat2, key="sel_cat2")
 
         notes = st.text_area("Construction Notes", value=a.get('construction_notes',''), height=70, key="notes")
 
@@ -323,8 +328,8 @@ with _b2:
         st.session_state['sec2_open'] = not _sec2_open
         st.rerun()
 
-sel_cat1 = st.session_state.get("sel_cat1", "")
-sel_cat2 = st.session_state.get("sel_cat2", "")
+sel_cat1 = st.session_state.get("sel_cat1", [])  # list
+sel_cat2 = st.session_state.get("sel_cat2", [])  # list
 
 # Filter controls — always rendered so variables are always defined
 use_cat2   = st.session_state.get('_f_use_cat2', True)
@@ -346,10 +351,11 @@ if st.session_state.get('analysis'):
     _prof_inj  = st.session_state.analysis.get('profile', _gtype_inj)
     _sketch_feats['_garment_type'] = _prof_inj  # profile takes priority for prescore branching
 
+_cat2_filter = sel_cat2 if (use_cat2 and sel_cat2) else None
 results = search_similar_styles(
     df_list, df_smv,
-    cat1=sel_cat1,
-    cat2=sel_cat2 if use_cat2 else None,
+    cat1=sel_cat1 or None,
+    cat2=_cat2_filter,
     genders=sel_genders if sel_genders else None,
     keyword=keyword,
     top_n=50,
@@ -359,10 +365,10 @@ results = search_similar_styles(
 
 # Auto-fallback to Cat1 only if Cat2 returns no results
 fallback_used = False
-if results.empty and use_cat2:
+if results.empty and _cat2_filter:
     results = search_similar_styles(
         df_list, df_smv,
-        cat1=sel_cat1,
+        cat1=sel_cat1 or None,
         cat2=None,
         genders=sel_genders if sel_genders else None,
         keyword=keyword,
@@ -376,11 +382,13 @@ if results.empty:
     st.warning("No results found. Try adjusting Category #1 or the keyword.")
     st.stop()
 
+_cat1_label = ', '.join(sel_cat1) if sel_cat1 else 'All'
+_cat2_label = ', '.join(sel_cat2) if (use_cat2 and sel_cat2) else 'All'
 if fallback_used:
-    st.warning(f"No results for Category #2 `{sel_cat2}` → **Searching by Category #1 only** ({len(results)} results)")
+    st.warning(f"No results for Category #2 `{_cat2_label}` → **Searching by Category #1 only** ({len(results)} results)")
 else:
     gender_label = ', '.join(sel_genders) if sel_genders else 'All genders'
-    st.success(f"**{len(results)} similar styles** found — `{sel_cat1}` / `{sel_cat2 if use_cat2 else 'All'}` / {gender_label}")
+    st.success(f"**{len(results)} similar styles** found — `{_cat1_label}` / `{_cat2_label}` / {gender_label}")
 
 # AI visual similarity ranking
 candidates = []
