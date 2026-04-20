@@ -6,7 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv, set_key
 from data_loader import load_data, search_similar_styles, get_style_processes, build_process_index, get_proc_features
 from cm_calculator import calculate_cm, FACTORIES, COUNTRY_FLAGS, WASH_OPTIONS
-from sketch_analyzer import analyze_sketch, CAT2_BY_CAT1, rank_by_similarity, FEATURE_WEIGHTS
+from sketch_analyzer import analyze_sketch, CAT2_BY_CAT1, FEATURE_WEIGHTS
 from image_extractor import load_image_index, get_image, get_image_by_style
 
 ENV_PATH = Path(__file__).parent / ".env"
@@ -397,53 +397,15 @@ for _, row in results.iterrows():
         'gender': str(row.get('GENDER', '')),
     })
 
-if "ranked_candidates" not in st.session_state:
-    st.session_state.ranked_candidates = None
-
-# Clear ranked_candidates when search filters change so stale results aren't shown
-_search_key = f"{sel_cat1}|{sel_cat2 if use_cat2 else 'all'}|{','.join(sorted(sel_genders))}"
-if st.session_state.get('_last_search_key') != _search_key:
-    st.session_state.ranked_candidates = None
-    st.session_state['_last_search_key'] = _search_key
-
 if not _sec2_open:
     st.caption(f"▼ {len(results)} styles found — click ▼ Expand to show")
 
-display_candidates = sorted(
-    st.session_state.ranked_candidates,
-    key=lambda x: -(x.get('similarity_score') or 0)
-) if st.session_state.ranked_candidates else candidates
+display_candidates = candidates
 
 if "selected_style" not in st.session_state:
     st.session_state.selected_style = display_candidates[0]['style'] if display_candidates else ""
 
 if _sec2_open:
-    col_rank, _ = st.columns([1, 3])
-    with col_rank:
-        if st.button("🔍 AI Visual Similarity Analysis", type="secondary",
-                     help="Claude compares the uploaded sketch with result images and sorts by visual similarity"):
-            with st.spinner("Analyzing image similarity... (~10 sec)"):
-                try:
-                    sketch_file.seek(0)
-                    sketch_bytes = sketch_file.read()
-                    for c in candidates:
-                        if 'img_bytes' not in c:
-                            c['img_bytes'] = get_image(c.get('orig_idx', -1))
-                    sketch_features = st.session_state.analysis.get('features')
-                    _gtype = st.session_state.analysis.get('garment_type', 'top')
-                    _prof  = st.session_state.analysis.get('profile', '')
-                    _proc_idx = build_process_index(df_proc)
-                    ranked = rank_by_similarity(sketch_bytes, candidates, api_key,
-                                                sketch_features=sketch_features,
-                                                garment_type=_gtype,
-                                                profile=_prof,
-                                                proc_index=_proc_idx)
-                    st.session_state.ranked_candidates = ranked
-                    if ranked:
-                        st.session_state.selected_style = ranked[0]['style']
-                except Exception as e:
-                    st.error(f"Similarity analysis error: {e}")
-
     # Build process index once for the whole grid
     _grid_proc_index = build_process_index(df_proc)
 
@@ -459,14 +421,8 @@ if _sec2_open:
                 else:
                     st.markdown("🖼️ *No image*")
 
-                score = c.get('similarity_score')
-                score_str = f"  🎯 **{score}pt**" if score else ""
                 smv_str = f"  SMV {c['smv']:.2f}" if c.get('smv') else ""
-                st.caption(f"**{c['style']}** {score_str}  \n{c['cat2']} {c['cat3']}{smv_str}")
-
-                reason = c.get('similarity_reason', '')
-                if reason:
-                    st.caption(f"*{reason}*")
+                st.caption(f"**{c['style']}**  \n{c['cat2']} {c['cat3']}{smv_str}")
 
                 # ── Process DB Construction Features ──────────────────
                 _an_gtype = st.session_state.analysis.get('garment_type', 'top') if st.session_state.get('analysis') else 'top'
@@ -518,20 +474,10 @@ if _sec2_open:
 
                     st.caption("🔩 " + "  \n".join(lines))
 
-                # ── AI similarity matched/mismatched features ─────────
-                det = c.get('detected_features', {})
-                matched = c.get('matched_features', [])
-                mismatched = c.get('mismatched_features', [])
-                if matched or mismatched:
-                    match_str = " ".join(f"✅{m}" for m in matched[:4])
-                    miss_str  = " ".join(f"❌{m}" for m in mismatched[:4])
-                    st.caption(f"{match_str}  \n{miss_str}")
-
                 is_selected = (st.session_state.selected_style == c['style'])
                 btn_label = "✅ Selected" if is_selected else "Select"
                 if st.button(btn_label, key=f"sel_{c['style']}_{row_start}_{ci}", disabled=is_selected):
                     st.session_state.selected_style = c['style']
-                    st.session_state.ranked_candidates = None
                     st.rerun()
 
     st.info(f"Selected style: **{st.session_state.selected_style}**")
