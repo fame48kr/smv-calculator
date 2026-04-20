@@ -425,7 +425,8 @@ if _sec2_open:
                 st.caption(f"**{c['style']}**  \n{c['cat2']} {c['cat3']}{smv_str}")
 
                 # ── Process DB Construction Details ───────────────────
-                pf = get_proc_features(c['style'], _grid_proc_index, garment_type='top')
+                _lookup = STYLE_ALIAS.get(c['style'], c['style'])
+                pf = get_proc_features(_lookup, _grid_proc_index, garment_type='top')
                 details = pf.get('details', [])
                 if details:
                     st.caption("📌 " + " · ".join(details))

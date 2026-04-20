@@ -241,9 +241,10 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
         details.append('pleats')
     if any(k in text for k in ['tuck', 'pin tuck']):
         details.append('tuck')
-    if any(k in text for k in ['shirring', 'shirr', 'smocking', 'mobiloin',
-                                'smock', 'elasticate']):
+    if any(k in text for k in ['shirring', 'shirr', 'mobiloin', 'elasticate']):
         details.append('shirring')
+    if any(k in text for k in ['smocking', 'smock']):
+        details.append('smocking')
     if any(k in text for k in ['ruffle', 'frill', 'gather', 'gathered']):
         details.append('ruffle')
     if any(k in text for k in ['flag label', 'attach flag', 'flag lbl']):
@@ -257,6 +258,18 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
         details.append('elastic')
     if any(k in text for k in ['lace', 'attach lace', 'lace trim']):
         details.append('lace')
+    if any(k in text for k in ['ribbon', 'attach ribbon', 'sew ribbon',
+                                'ribbon trim', 'ribbon tie']):
+        details.append('ribbon')
+    if any(k in text for k in ['tulle', 'attach tulle', 'sew tulle',
+                                'tulle layer', 'tulle skirt']):
+        details.append('tulle')
+    if any(k in text for k in ['attach ear', 'sew ear', 'animal ear',
+                                'hood ear', 'ear attachment', 'ear panel']):
+        details.append('ears')
+    if any(k in text for k in ['attach horn', 'sew horn', 'horn panel',
+                                'horn attachment']):
+        details.append('horn')
 
     if details:
         f['details'] = details
