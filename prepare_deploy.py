@@ -35,6 +35,8 @@ df_list = df_list.rename(columns={
 })
 df_list = df_list[df_list['STYLE'].notna()].reset_index(drop=False)
 df_list = df_list.rename(columns={'index':'ORIG_IDX'})
+# Normalize GENDER to Title Case so duplicates like "1. womens" / "1. Womens" are unified
+df_list['GENDER'] = df_list['GENDER'].astype(str).str.strip().str.title()
 _clean_df(df_list).to_parquet(f"{OUT_DIR}/df_list.parquet", index=False)
 print(f"  df_list: {len(df_list)} rows")
 
