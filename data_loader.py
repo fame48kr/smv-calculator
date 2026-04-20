@@ -208,7 +208,7 @@ def get_proc_features(style: str, proc_index: dict, garment_type: str = 'top') -
     if any(k in text for k in ['zipper', 'zip ', 'zip guard', 'invisible zip',
                                 'coil zip', 'attach zip', 'topstitch zip']):
         details.append('zipper')
-    if any(k in text for k in ['placket', 'plkt', 'cf panel', 'button band',
+    if any(k in text for k in ['placket', 'plkt', 'button band',
                                 'button placket']):
         details.append('placket')
     if any(k in text for k in ['button hole', 'buttonhole', 'attach button',
