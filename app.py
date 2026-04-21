@@ -28,6 +28,11 @@ if _APP_PASSWORD:
                 st.rerun()
             else:
                 st.error("Incorrect password. Please try again.")
+        st.warning(
+            "⚠️ This system contains proprietary data that is a valuable asset of Yakjin. "
+            "Access is strictly restricted to authorized personnel only. "
+            "Sharing or distributing this information to other vendors or external parties is strictly prohibited."
+        )
         st.stop()
 
 st.title("✂️ CM Calculator AI Assistant")
