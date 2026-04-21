@@ -19,11 +19,17 @@ _APP_PASSWORD = st.secrets.get("APP_PASSWORD", "") or os.environ.get("APP_PASSWO
 
 if _APP_PASSWORD:
     if not st.session_state.get("_authenticated"):
-        st.title("✂️ CM Calculator")
-        st.warning(
-            "⚠️ This system contains proprietary data that is a valuable asset of Yakjin. "
-            "Access is strictly restricted to authorized personnel only. "
-            "Sharing or distributing this information to other vendors or external parties is strictly prohibited."
+        st.title("✂️ CM Assistant")
+        st.markdown(
+            """
+            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:14px 18px;margin-bottom:18px;">
+            ⚠️ <strong>Confidential Notice</strong><br>
+            This system contains proprietary data that is a valuable asset of Yakjin.
+            Access is strictly restricted to authorized personnel only.
+            Sharing or distributing this information to other vendors or external parties is strictly prohibited.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
         st.markdown("### Please enter the access password")
         _pwd_input = st.text_input("Password", type="password", key="_pwd_input")
