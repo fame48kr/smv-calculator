@@ -19,7 +19,7 @@ _APP_PASSWORD = st.secrets.get("APP_PASSWORD", "") or os.environ.get("APP_PASSWO
 
 if _APP_PASSWORD:
     if not st.session_state.get("_authenticated"):
-        st.title("✂️ CM Assistant")
+        st.title("✂️ CM Calculator")
         st.markdown(
             """
             <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:14px 18px;margin-bottom:18px;">
