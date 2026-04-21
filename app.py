@@ -20,6 +20,11 @@ _APP_PASSWORD = st.secrets.get("APP_PASSWORD", "") or os.environ.get("APP_PASSWO
 if _APP_PASSWORD:
     if not st.session_state.get("_authenticated"):
         st.title("✂️ CM Calculator")
+        st.warning(
+            "⚠️ This system contains proprietary data that is a valuable asset of Yakjin. "
+            "Access is strictly restricted to authorized personnel only. "
+            "Sharing or distributing this information to other vendors or external parties is strictly prohibited."
+        )
         st.markdown("### Please enter the access password")
         _pwd_input = st.text_input("Password", type="password", key="_pwd_input")
         if st.button("Login", type="primary"):
@@ -28,11 +33,6 @@ if _APP_PASSWORD:
                 st.rerun()
             else:
                 st.error("Incorrect password. Please try again.")
-        st.warning(
-            "⚠️ This system contains proprietary data that is a valuable asset of Yakjin. "
-            "Access is strictly restricted to authorized personnel only. "
-            "Sharing or distributing this information to other vendors or external parties is strictly prohibited."
-        )
         st.stop()
 
 st.title("✂️ CM Calculator AI Assistant")
