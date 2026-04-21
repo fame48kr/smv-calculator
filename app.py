@@ -29,7 +29,7 @@ if _APP_PASSWORD:
             else:
                 st.error("Incorrect password. Please try again.")
         st.warning(
-            "⚠️ This system contains proprietary data that is a valuable asset of Yakjin. "
+            "⚠️ This system contains proprietary data that is a valuable asset of YAKJIN. "
             "Access is strictly restricted to authorized personnel only. "
             "Sharing or distributing this information to other vendors or external parties is strictly prohibited."
         )
